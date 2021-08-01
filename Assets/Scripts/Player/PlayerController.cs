@@ -14,6 +14,7 @@ public class PlayerController : NetworkBehaviour
     PlayerInput playerInput;
 
     Camera playerCamera;
+    // Transform[] playerSpawn;
     [SerializeField] Unit unitToSpawn;
     [SerializeField] Unit selectedUnit;
     Vector3 pointerPos;
@@ -40,8 +41,6 @@ public class PlayerController : NetworkBehaviour
     {
         if (!IsLocalPlayer) return;
 
-        // NetworkTransport.Init();
-
         playerCamera = Camera.main;
         initialPosition = playerCamera.transform.position;
         initialRotation = playerCamera.transform.eulerAngles;
@@ -59,6 +58,17 @@ public class PlayerController : NetworkBehaviour
         else
             SubmitNameChangeServerRpc(playerName);
         ConnectedPlayerServerRpc(NetworkManager.LocalClientId);
+
+        print(OwnerClientId + " " + NetworkManager.LocalClientId);
+        SpawnUnitServerRpc(OwnerClientId, NetworkManager.LocalClientId);
+
+        if (OwnerClientId > 0)
+        {
+            var camPos = Camera.main.transform.position;
+            camPos.z += 12.85f;
+            Camera.main.transform.position = camPos;
+            Camera.main.transform.eulerAngles = new Vector3(20, 180, 0);
+        }
     }
 
     private void OnEnable() 
@@ -84,16 +94,16 @@ public class PlayerController : NetworkBehaviour
     private void OnDestroy() 
     {
         print($"{Name.Value} Disconnected");
-        if (!IsLocalPlayer)
-            DisconnectPlayer();
+        // if (!IsLocalPlayer)
+        //     DisconnectPlayer();
     }
 #endif
 
     private void OnApplicationQuit() 
     {
         print($"{Name.Value} Disconnected");
-        if (!IsLocalPlayer)
-            DisconnectPlayer();
+        // if (!IsLocalPlayer)
+        //     DisconnectPlayer();
     }
 
     [ServerRpc]
@@ -110,7 +120,7 @@ public class PlayerController : NetworkBehaviour
 
     private void DisconnectPlayer()
     {
-        // ConsoleLogger.AddMessage("Hello Holaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        // ConsoleLogger.AddMessageServerRpc("Hello Holaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         if (LewinNetworkManager)
             LewinNetworkManager.Disconnected(NetworkManager.LocalClientId);
         NetworkManager.StopClient();
@@ -149,7 +159,7 @@ public class PlayerController : NetworkBehaviour
                     {
                         // pointerPos = hit.point;
                         UIManager.btnChoose.interactable = true;
-                        LeanTween.rotateLocal(playerCamera.gameObject, rotationToUnit, .2f);
+                        LeanTween.rotateLocal(playerCamera.gameObject, selectedUnit.transform.eulerAngles, .2f);
                         LeanTween.move(playerCamera.gameObject, selectedUnit.transform.position + offsetToUnit, .2f).setOnComplete(() => {
                             playerCamera.transform.parent = selectedUnit.transform;
                         });
@@ -161,10 +171,24 @@ public class PlayerController : NetworkBehaviour
 
     private void ChooseUnit()
     {
+        
         // selectedUnit = Instantiate(unitToSpawn, Vector3.zero + Vector3.up * 2, Quaternion.identity);
         // selectedUnit.GetComponent<NetworkObject>().SpawnWithOwnership(NetworkManager.LocalClientId);
         selectedUnit.Initialise(this, playerInput, playerCamera, NetworkManager.LocalClientId);
         selectedUnit.SetToControl();
+    }
+
+    [ServerRpc]
+    private void SpawnUnitServerRpc(ulong ownerID, ulong localID)
+    {
+        var spawnPoints = GameObject.FindGameObjectWithTag("SpawnPoints").transform;
+        var playerSpawn = new Transform[spawnPoints.childCount];
+        for(int i = 0; i < spawnPoints.childCount; i++)
+        {
+            playerSpawn[i] = spawnPoints.GetChild(i);
+        }
+        selectedUnit = Instantiate(unitToSpawn, playerSpawn[ownerID == 0 ? 0 : 1].position, Quaternion.Euler(ownerID == 0 ? Vector3.zero : new Vector3(0,180,0)));
+        selectedUnit.GetComponent<NetworkObject>().SpawnWithOwnership(localID);
     }
 
     private void DeselectUnit()

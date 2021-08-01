@@ -57,7 +57,6 @@ public class LewinNetworkManager : MonoBehaviour
         //     var player = Client.PlayerObject.GetComponent<PlayerController>();
         //     print($"{player.Name.Value} Disconnected");
         // }
-
         objMenuUI.SetActive(true);
         objPlayUI.SetActive(false);
     }
