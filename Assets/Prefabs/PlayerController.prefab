@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4580398065171115423}
   - component: {fileID: 5210612038455274254}
   - component: {fileID: 7793332312631871248}
+  - component: {fileID: 7562214380335564171}
   m_Layer: 0
   m_Name: PlayerController
   m_TagString: Untagged
@@ -70,3 +71,15 @@ MonoBehaviour:
   PrefabHashGenerator: GameObject
   AlwaysReplicateAsRoot: 0
   DontDestroyWithOwner: 0
+--- !u!114 &7562214380335564171
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4580398065171115421}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ef17493cd857b14786aad8fc2cd2a2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

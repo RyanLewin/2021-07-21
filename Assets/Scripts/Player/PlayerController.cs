@@ -11,7 +11,7 @@ public class PlayerController : NetworkBehaviour
     UIManager UIManager => UIManager.Instance;
     LewinNetworkManager LewinNetworkManager => LewinNetworkManager.Instance;
     ConsoleLogger ConsoleLogger => ConsoleLogger.Instance;
-    PlayerInput playerInput;
+    public PlayerInput playerInput {get; private set;}
 
     Camera playerCamera;
     // Transform[] playerSpawn;
@@ -47,6 +47,7 @@ public class PlayerController : NetworkBehaviour
 
         playerInput = new PlayerInput();
         EnableInput();
+        GetComponent<PlayerConsoleManager>().SetPlayerInput(playerInput);
 
         UIManager.btnDeselect.onClick.AddListener(DeselectUnit);
         UIManager.btnDisconnect.onClick.AddListener(DisconnectPlayer);
@@ -59,7 +60,7 @@ public class PlayerController : NetworkBehaviour
             SubmitNameChangeServerRpc(playerName);
         ConnectedPlayerServerRpc(NetworkManager.LocalClientId);
 
-        print(OwnerClientId + " " + NetworkManager.LocalClientId);
+        // print(OwnerClientId + " " + NetworkManager.LocalClientId);
         SpawnUnitServerRpc(OwnerClientId, NetworkManager.LocalClientId);
 
         if (OwnerClientId > 0)
@@ -73,6 +74,7 @@ public class PlayerController : NetworkBehaviour
 
     private void OnEnable() 
     {
+        if (!IsLocalPlayer) return;
         if (playerInput != null)
             EnableInput();
     }
@@ -85,6 +87,7 @@ public class PlayerController : NetworkBehaviour
     }
 
     private void OnDisable() {
+        if (!IsLocalPlayer) return;
         if (playerInput == null) return;
         playerInput.KeyboardMouse.MouseClick.started -= SelectUnit;
         playerInput.Disable();
@@ -149,7 +152,7 @@ public class PlayerController : NetworkBehaviour
     {
         if (context.started)
         {
-             Vector3 mouseScreenPos = playerInput.KeyboardMouse.PointerPosition.ReadValue<Vector2>();
+            Vector3 mouseScreenPos = playerInput.KeyboardMouse.PointerPosition.ReadValue<Vector2>();
             var mousePos = playerCamera.ScreenPointToRay(mouseScreenPos);
             if (Physics.Raycast(mousePos, out RaycastHit hit, 1000f/* , LayerMask.NameToLayer("Unit") */))
             {
