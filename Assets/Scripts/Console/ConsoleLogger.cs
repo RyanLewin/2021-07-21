@@ -10,7 +10,6 @@ using MLAPI.Serialization.Pooled;
 public class ConsoleLogger : NetworkBehaviour
 {
     public static ConsoleLogger Instance;
-    PlayerInput playerInput;
     [SerializeField] GameObject consoleParent;
     [SerializeField] TextMeshProUGUI consoleMessage;
     public TMP_InputField inputField;
@@ -24,11 +23,10 @@ public class ConsoleLogger : NetworkBehaviour
 
     public void AddMessage(string message)
     {
-        print("print plz");
         var xPos = consoleParent.GetComponent<RectTransform>().sizeDelta.x / 2;
         var newMessage = Instantiate(consoleMessage, new Vector3(xPos, heightOffset, 0), Quaternion.identity, consoleParent.transform);
         newMessage.rectTransform.anchoredPosition = new Vector2(0,0);
-        // newMessage.GetComponent<NetworkObject>().Spawn();
+
         newMessage.text = message;
         count = 0;
         count = Overflow(newMessage);
@@ -46,7 +44,7 @@ public class ConsoleLogger : NetworkBehaviour
     public int Overflow(TextMeshProUGUI newMessage)
     {
         count++;
-        if (count > 5) 
+        if (count > 20) 
         {
             return count;
         }

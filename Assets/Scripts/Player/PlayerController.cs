@@ -5,6 +5,7 @@ using MLAPI.NetworkVariable;
 using UnityEngine.InputSystem;
 using UnityEngine.AI;
 using UnityEngine.Networking;
+using System.Collections;
 
 public class PlayerController : NetworkBehaviour
 {
@@ -58,6 +59,7 @@ public class PlayerController : NetworkBehaviour
             Name.Value = playerName;
         else
             SubmitNameChangeServerRpc(playerName);
+        GetComponent<PlayerConsoleManager>().LogMessage($"{playerName} has joined!");
         ConnectedPlayerServerRpc(NetworkManager.LocalClientId);
 
         // print(OwnerClientId + " " + NetworkManager.LocalClientId);
@@ -123,7 +125,15 @@ public class PlayerController : NetworkBehaviour
 
     private void DisconnectPlayer()
     {
-        // ConsoleLogger.AddMessageServerRpc("Hello Holaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        GetComponent<PlayerConsoleManager>().LogMessage($"{Name.Value} has left");
+        // if (selectedUnit) Destroy(selectedUnit.gameObject);
+        StartCoroutine(WaitToDisconnect());
+    }
+
+    IEnumerator WaitToDisconnect()
+    {
+        yield return new WaitForFixedUpdate();
+
         if (LewinNetworkManager)
             LewinNetworkManager.Disconnected(NetworkManager.LocalClientId);
         NetworkManager.StopClient();

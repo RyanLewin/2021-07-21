@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using MLAPI;
 using MLAPI.Serialization.Pooled;
@@ -10,15 +11,26 @@ using TMPro;
 
 public class PlayerConsoleManager : NetworkBehaviour
 {
+    public static PlayerConsoleManager Instance;
+    ConsoleLogger ConsoleLogger;
     PlayerInput playerInput;
-    string message;
+    string latestMessage;
+    string debug;
     NetworkChannel channel;
     [SerializeField] TMP_InputField inputField;
 
     private void OnGUI() {
-        if (!IsLocalPlayer) return;
-        GUILayout.Space(50f);
-        GUILayout.Label("Message: " + message);
+        GUILayout.Space(50);
+        GUILayout.Label(IsOwner.ToString());
+    }
+
+    private void Awake() 
+    {
+        if (IsOwner)
+        {
+            Instance = this;
+        }
+        ConsoleLogger = ConsoleLogger.Instance;
     }
 
     public void SetPlayerInput(PlayerInput _playerInput)
@@ -28,10 +40,10 @@ public class PlayerConsoleManager : NetworkBehaviour
     }
 
     // Start is called before the first frame update
-    void Start()
+    public override void NetworkStart()
     {
         if (!IsLocalPlayer) return;
-        inputField = ConsoleLogger.Instance.inputField;
+        inputField = ConsoleLogger.inputField;
 
         channel = new NetworkChannel();
         playerInput = GetComponent<PlayerController>().playerInput;
@@ -41,8 +53,8 @@ public class PlayerConsoleManager : NetworkBehaviour
             using (PooledNetworkReader reader = PooledNetworkReader.Get(stream))
             {
                 var stringBuilder = reader.ReadString();
-                message = stringBuilder.ToString();
-                ConsoleLogger.Instance.AddMessage(message);
+                latestMessage = stringBuilder.ToString();
+                ConsoleLogger.Instance.AddMessage(latestMessage);
             }
         });
     }
@@ -75,13 +87,17 @@ public class PlayerConsoleManager : NetworkBehaviour
 
     public void LogMessage(string messageToSend)
     {
-        message = messageToSend;
-        ConsoleLogger.Instance.AddMessage(message);
+        latestMessage = messageToSend;
+        ConsoleLogger.AddMessage(latestMessage);
         var buffer = PooledNetworkBuffer.Get();
         using (var writer = PooledNetworkWriter.Get(buffer))
         {
-            writer.WriteString(message);
+            writer.WriteString(latestMessage);
         }
-        CustomMessagingManager.SendNamedMessage("myMessageName", NetworkManager.ServerClientId, buffer, channel);
+        
+        foreach(var client in NetworkManager.ConnectedClients)
+        {
+            CustomMessagingManager.SendNamedMessage("myMessageName", client.Key, buffer);
+        }
     }
 }

@@ -52,11 +52,11 @@ public class LewinNetworkManager : MonoBehaviour
     }
 
     private void OnDisconnect(ulong playerID) {
-        // if (NetworkManager.ConnectedClients.TryGetValue(playerID, out var Client))
-        // {
-        //     var player = Client.PlayerObject.GetComponent<PlayerController>();
-        //     print($"{player.Name.Value} Disconnected");
-        // }
+        if (NetworkManager.ConnectedClients.TryGetValue(playerID, out var Client))
+        {
+            var player = Client.PlayerObject.GetComponent<PlayerController>();
+            print($"{player.Name.Value} Disconnected");
+        }
         objMenuUI.SetActive(true);
         objPlayUI.SetActive(false);
     }
