@@ -42,10 +42,6 @@ public class PlayerController : NetworkBehaviour
     {
         if (!IsLocalPlayer) return;
 
-        playerCamera = Camera.main;
-        initialPosition = playerCamera.transform.position;
-        initialRotation = playerCamera.transform.eulerAngles;
-
         playerInput = new PlayerInput();
         EnableInput();
         GetComponent<PlayerConsoleManager>().SetPlayerInput(playerInput);
@@ -59,19 +55,21 @@ public class PlayerController : NetworkBehaviour
             Name.Value = playerName;
         else
             SubmitNameChangeServerRpc(playerName);
-        GetComponent<PlayerConsoleManager>().LogMessage($"{playerName} has joined!");
+        GetComponent<PlayerConsoleManager>().LogMessage($"{playerName} has joined.");
         ConnectedPlayerServerRpc(NetworkManager.LocalClientId);
 
-        // print(OwnerClientId + " " + NetworkManager.LocalClientId);
         SpawnUnitServerRpc(OwnerClientId, NetworkManager.LocalClientId);
 
+        playerCamera = Camera.main;
         if (OwnerClientId > 0)
         {
-            var camPos = Camera.main.transform.position;
+            var camPos = playerCamera.transform.position;
             camPos.z += 12.85f;
-            Camera.main.transform.position = camPos;
-            Camera.main.transform.eulerAngles = new Vector3(20, 180, 0);
+            playerCamera.transform.position = camPos;
+            playerCamera.transform.eulerAngles = new Vector3(20, 180, 0);
         }
+        initialPosition = playerCamera.transform.position;
+        initialRotation = playerCamera.transform.eulerAngles;
     }
 
     private void OnEnable() 
@@ -99,16 +97,12 @@ public class PlayerController : NetworkBehaviour
     private void OnDestroy() 
     {
         print($"{Name.Value} Disconnected");
-        // if (!IsLocalPlayer)
-        //     DisconnectPlayer();
     }
 #endif
 
     private void OnApplicationQuit() 
     {
         print($"{Name.Value} Disconnected");
-        // if (!IsLocalPlayer)
-        //     DisconnectPlayer();
     }
 
     [ServerRpc]
@@ -120,20 +114,11 @@ public class PlayerController : NetworkBehaviour
     [ServerRpc]
     private void ConnectedPlayerServerRpc(ulong id)
     {
-        LewinNetworkManager.OnConnect(id);
+        LewinNetworkManager.OnConnect(id, Name.Value);
     }
 
     private void DisconnectPlayer()
     {
-        GetComponent<PlayerConsoleManager>().LogMessage($"{Name.Value} has left");
-        // if (selectedUnit) Destroy(selectedUnit.gameObject);
-        StartCoroutine(WaitToDisconnect());
-    }
-
-    IEnumerator WaitToDisconnect()
-    {
-        yield return new WaitForFixedUpdate();
-
         if (LewinNetworkManager)
             LewinNetworkManager.Disconnected(NetworkManager.LocalClientId);
         NetworkManager.StopClient();
@@ -143,28 +128,13 @@ public class PlayerController : NetworkBehaviour
             NetworkManager.StopServer();
     }
 
-    private bool CanControlPlayer { get => (Application.isFocused && IsLocalPlayer); }
-
-    private void Movement()
-    {
-        if (!CanControlPlayer) return;
-
-        Vector3 moveDirection = playerInput.KeyboardMouse.Move.ReadValue<Vector2>();
-        if (moveDirection != Vector3.zero)
-        {
-            moveDirection.z = moveDirection.y;
-            moveDirection.y = 0;
-            SubmitPositionRequestServerRpc(transform.position - moveDirection * moveSpeed * Time.deltaTime);
-        }
-    }
-
     private void SelectUnit(InputAction.CallbackContext context)
     {
         if (context.started)
         {
             Vector3 mouseScreenPos = playerInput.KeyboardMouse.PointerPosition.ReadValue<Vector2>();
             var mousePos = playerCamera.ScreenPointToRay(mouseScreenPos);
-            if (Physics.Raycast(mousePos, out RaycastHit hit, 1000f/* , LayerMask.NameToLayer("Unit") */))
+            if (Physics.Raycast(mousePos, out RaycastHit hit, 1000f))
             {
                 if (hit.transform.CompareTag("Unit"))
                 {
@@ -184,7 +154,6 @@ public class PlayerController : NetworkBehaviour
 
     private void ChooseUnit()
     {
-        
         // selectedUnit = Instantiate(unitToSpawn, Vector3.zero + Vector3.up * 2, Quaternion.identity);
         // selectedUnit.GetComponent<NetworkObject>().SpawnWithOwnership(NetworkManager.LocalClientId);
         selectedUnit.Initialise(this, playerInput, playerCamera, NetworkManager.LocalClientId);
@@ -212,17 +181,5 @@ public class PlayerController : NetworkBehaviour
         playerCamera.transform.parent = null;
         LeanTween.move(playerCamera.gameObject, initialPosition, .2f);
         LeanTween.rotate(playerCamera.gameObject, initialRotation, .2f);
-    }
-
-    [ServerRpc]
-    private void SubmitPositionRequestServerRpc(Vector3 newPos, ServerRpcParams rpcParams = default)
-    {
-        Position.Value = newPos;
-    }
-
-    void FixedUpdate()
-    {
-        // transform.position = Vector3.Lerp(transform.position, transform.position - Vector3.right, Time.deltaTime);
-        transform.position = Position.Value;
     }
 }

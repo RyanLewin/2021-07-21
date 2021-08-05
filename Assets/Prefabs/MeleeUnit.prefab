@@ -82,7 +82,7 @@ MonoBehaviour:
   groundMask:
     serializedVersion: 2
     m_Bits: 64
-  moveSpeed: 20
+  moveSpeed: 5
   horizontalRotateSpeed: 50
   verticalRotateSpeed: 30
   invertY: 0

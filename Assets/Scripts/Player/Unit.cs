@@ -89,25 +89,19 @@ public class Unit : NetworkBehaviour
 
     private void Update() 
     {
-        if (!CanControl || !/* playerController. IsLocalPlayer*/ IsOwner) return;
+        if (!CanControl || !IsOwner) return;
 
         isGrounded = Physics.CheckSphere(groundCheckPos.position, .05f, groundMask);
 
         var mouseDelta = playerInput.KeyboardMouse.PointerDelta.ReadValue<Vector2>();
-        // if (mouseDelta != Vector2.zero)
-        // {
-            var mouseX = mouseDelta.x * horizontalRotateSpeed * Time.deltaTime;
-            var mouseY = (invertY ? mouseDelta.y : -mouseDelta.y) * verticalRotateSpeed * Time.deltaTime;
+        var mouseX = mouseDelta.x * horizontalRotateSpeed * Time.deltaTime;
+        var mouseY = (invertY ? mouseDelta.y : -mouseDelta.y) * verticalRotateSpeed * Time.deltaTime;
 
-            xRotation += mouseY;
-            xRotation = Mathf.Clamp(xRotation, -85f, 85f);
+        xRotation += mouseY;
+        xRotation = Mathf.Clamp(xRotation, -85f, 85f);
 
-            playerCamera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-            transform.Rotate(Vector3.up * mouseX);
-            // transform.eulerAngles = Vector3.Slerp(transform.eulerAngles, transform.eulerAngles + Vector3.up * mouseX, horizontalRotateSpeed * Time.deltaTime);
-            // if (Mathf.Abs(mouseDelta.y) > 0)
-            //     playerCamera.transform.Rotate((invertY ? mouseDelta.y : -mouseDelta.y) * verticalRotateSpeed * Time.deltaTime, 0, 0, Space.Self);
-        // }
+        playerCamera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+        transform.Rotate(Vector3.up * mouseX);
 
         Vector3 moveValue = playerInput.KeyboardMouse.Move.ReadValue<Vector2>();
         
@@ -115,10 +109,11 @@ public class Unit : NetworkBehaviour
         moveValue.y = 0;
         var moveDirection = transform.right * moveValue.x + transform.forward * moveValue.z;
         var newPosition = Vector3.Lerp(transform.position, transform.position + moveDirection, moveSpeed*Time.deltaTime);
-        // transform.position += moveDirection * moveSpeed * Time.deltaTime;
+
         moveDirection *= moveSpeed * Time.deltaTime;
-        // print(moveDirection.x + ", " + moveDirection.z);
-        SubmitPositionRequestServerRpc(transform.position + moveDirection/* + moveDirection * moveSpeed * Time.deltaTime */);
+        transform.position += moveDirection;
+
+        SubmitPositionRequestServerRpc(transform.position/*  + moveDirection */);
     }
     
     private void Jump(InputAction.CallbackContext context)
@@ -142,16 +137,5 @@ public class Unit : NetworkBehaviour
             isMouseDown = true;
         else if (context.canceled)
             isMouseDown = false;
-    }
-
-    private void FixedUpdate() {
-        if (!playerController) return;
-        if (!/* playerController. IsLocalPlayer*/IsOwner) return;
-
-        // if (!playerController.IsLocalPlayer)
-        // {
-            transform.position = Position.Value;
-            // return;
-        // }
     }
 }

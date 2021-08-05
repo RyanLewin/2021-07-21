@@ -29,44 +29,35 @@ public class LewinNetworkManager : MonoBehaviour
         Instance = this;
     }
 
-    private void Start() {
-        // NetworkManager.OnClientDisconnectCallback += OnDisconnect;
-        // NetworkManager.OnClientConnectedCallback += OnConnect;
+    private void Start() 
+    {
+        NetworkManager.OnClientDisconnectCallback += OnDisconnect;
     }
 
     public void HostGame() => NetworkManager.StartHost();
     public void JoinGame() => NetworkManager.StartClient();
     public void HostServer() => NetworkManager.StartServer();
 
-    public void OnConnect(ulong id)
+    public void OnConnect(ulong playerID, string playerName)
     {
-        if (NetworkManager.ConnectedClients.TryGetValue(id, out var Client))
-        {
-            var player = Client.PlayerObject.GetComponent<PlayerController>();
-            print($"{player.Name.Value} Connected");
-        }
+        // foreach(var host in connectedPlayers)
+        //     PlayerConsoleManager.Instance.LogMessage($"Playing against {host.Value}.", playerID);
+        connectedPlayers.Add(playerID, playerName);
     }
 
     public void Disconnected(ulong playerID){
-        OnDisconnect(playerID);
-    }
-
-    private void OnDisconnect(ulong playerID) {
-        if (NetworkManager.ConnectedClients.TryGetValue(playerID, out var Client))
-        {
-            var player = Client.PlayerObject.GetComponent<PlayerController>();
-            print($"{player.Name.Value} Disconnected");
-        }
         objMenuUI.SetActive(true);
         objPlayUI.SetActive(false);
+    }
+
+    public void OnDisconnect(ulong playerID) {
+        PlayerConsoleManager.Instance.LogMessage($"{connectedPlayers[playerID]} has Left.");
+        connectedPlayers.Remove(playerID);
     }
 
     public void HideMenuUI()
     {
         objMenuUI.SetActive(false);
         objPlayUI.SetActive(true);
-        // btnHost.SetActive(false);
-        // btnJoin.SetActive(false);
-        // btnServer.SetActive(false);
     }
 }

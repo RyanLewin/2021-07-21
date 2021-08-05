@@ -19,6 +19,7 @@ public class ConsoleLogger : NetworkBehaviour
 
     private void Awake() {
         Instance = this;
+        gameObject.SetActive(false);
     }
 
     public void AddMessage(string message)

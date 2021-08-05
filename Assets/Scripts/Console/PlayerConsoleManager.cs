@@ -21,7 +21,9 @@ public class PlayerConsoleManager : NetworkBehaviour
 
     private void OnGUI() {
         GUILayout.Space(50);
-        GUILayout.Label(IsOwner.ToString());
+        foreach(var player in NetworkManager.ConnectedClients)
+            GUILayout.Label(player.Key.ToString());
+        // GUILayout.Label(IsOwner.ToString());
     }
 
     private void Awake() 
@@ -39,16 +41,16 @@ public class PlayerConsoleManager : NetworkBehaviour
         EnableInput();
     }
 
-    // Start is called before the first frame update
     public override void NetworkStart()
     {
         if (!IsLocalPlayer) return;
+        ConsoleLogger.gameObject.SetActive(true);
         inputField = ConsoleLogger.inputField;
 
         channel = new NetworkChannel();
         playerInput = GetComponent<PlayerController>().playerInput;
 
-        CustomMessagingManager.RegisterNamedMessageHandler("myMessageName", (senderClientID, stream) =>
+        CustomMessagingManager.RegisterNamedMessageHandler("MessageName", (senderClientID, stream) =>
         {
             using (PooledNetworkReader reader = PooledNetworkReader.Get(stream))
             {
@@ -73,6 +75,9 @@ public class PlayerConsoleManager : NetworkBehaviour
     }
 
     private void OnDisable() {
+        if (IsLocalPlayer && ConsoleLogger)
+            ConsoleLogger.gameObject.SetActive(false);
+        
         if (playerInput == null) return;
         playerInput.KeyboardMouse.SendMessage.started -= SendMessage;
         playerInput.Disable();
@@ -85,19 +90,29 @@ public class PlayerConsoleManager : NetworkBehaviour
         inputField.text = "";
     }
 
-    public void LogMessage(string messageToSend)
+    private PooledNetworkBuffer SetMessageToSend(string messageToSend)
     {
         latestMessage = messageToSend;
         ConsoleLogger.AddMessage(latestMessage);
         var buffer = PooledNetworkBuffer.Get();
-        using (var writer = PooledNetworkWriter.Get(buffer))
-        {
-            writer.WriteString(latestMessage);
-        }
-        
+        var writer = PooledNetworkWriter.Get(buffer);
+        writer.WriteString(latestMessage);
+        return buffer;
+    }
+
+    public void LogMessage(string messageToSend)
+    {
+        var buffer = SetMessageToSend(messageToSend);
         foreach(var client in NetworkManager.ConnectedClients)
         {
-            CustomMessagingManager.SendNamedMessage("myMessageName", client.Key, buffer);
+            CustomMessagingManager.SendNamedMessage("MessageName", client.Key, buffer);
         }
+    }
+
+    public void LogMessage(string messageToSend, ulong clientID)
+    {
+        var buffer = SetMessageToSend(messageToSend);
+        print(clientID.ToString());
+        CustomMessagingManager.SendNamedMessage("MessageName", clientID, buffer);
     }
 }
