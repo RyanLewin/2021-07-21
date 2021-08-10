@@ -11,21 +11,19 @@ public class PlayerController : NetworkBehaviour
 {
     UIManager UIManager => UIManager.Instance;
     LewinNetworkManager LewinNetworkManager => LewinNetworkManager.Instance;
-    ConsoleLogger ConsoleLogger => ConsoleLogger.Instance;
+    PlayerConsoleManager PlayerConsoleManager;
     public PlayerInput playerInput {get; private set;}
-
+    public NetworkVariableBool CanPlayerMove = new NetworkVariableBool(new NetworkVariableSettings {
+        WritePermission = NetworkVariablePermission.OwnerOnly,
+        ReadPermission = NetworkVariablePermission.Everyone
+    });
     Camera playerCamera;
     // Transform[] playerSpawn;
     [SerializeField] Unit unitToSpawn;
     [SerializeField] Unit selectedUnit;
-    Vector3 pointerPos;
-
-    
-    [SerializeField] float moveSpeed; 
     Vector3 initialPosition;
     Vector3 initialRotation;
     [SerializeField] Vector3 offsetToUnit;
-    [SerializeField] Vector3 rotationToUnit;
 
     public NetworkVariableVector3 Position = new NetworkVariableVector3(new NetworkVariableSettings {
         WritePermission = NetworkVariablePermission.ServerOnly,
@@ -41,10 +39,11 @@ public class PlayerController : NetworkBehaviour
     public override void NetworkStart()
     {
         if (!IsLocalPlayer) return;
-
+        gameObject.name = $"{gameObject.name}_{NetworkManager.LocalClientId}";
         playerInput = new PlayerInput();
         EnableInput();
-        GetComponent<PlayerConsoleManager>().SetPlayerInput(playerInput);
+        PlayerConsoleManager = GetComponent<PlayerConsoleManager>();
+        PlayerConsoleManager.SetPlayerInput(playerInput);
 
         UIManager.btnDeselect.onClick.AddListener(DeselectUnit);
         UIManager.btnDisconnect.onClick.AddListener(DisconnectPlayer);
@@ -55,7 +54,7 @@ public class PlayerController : NetworkBehaviour
             Name.Value = playerName;
         else
             SubmitNameChangeServerRpc(playerName);
-        GetComponent<PlayerConsoleManager>().LogMessage($"{playerName} has joined.");
+        PlayerConsoleManager.LogMessage($"{playerName} has joined.");
         ConnectedPlayerServerRpc(NetworkManager.LocalClientId);
 
         SpawnUnitServerRpc(OwnerClientId, NetworkManager.LocalClientId);
@@ -114,7 +113,7 @@ public class PlayerController : NetworkBehaviour
     [ServerRpc]
     private void ConnectedPlayerServerRpc(ulong id)
     {
-        LewinNetworkManager.OnConnect(id, Name.Value);
+        LewinNetworkManager.OnConnect(id, this);
     }
 
     private void DisconnectPlayer()
@@ -158,6 +157,19 @@ public class PlayerController : NetworkBehaviour
         // selectedUnit.GetComponent<NetworkObject>().SpawnWithOwnership(NetworkManager.LocalClientId);
         selectedUnit.Initialise(this, playerInput, playerCamera, NetworkManager.LocalClientId);
         selectedUnit.SetToControl();
+        
+        UIManager.btnDisconnect.onClick.RemoveAllListeners();
+        UIManager.btnDisconnect.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Play";
+        UIManager.btnDisconnect.onClick.AddListener(SetGameStarted);
+        // if (IsHost)
+        //     TimeManager.Instance.SetGameStartedServerRpc();
+        // SetGameStartedServerRpc();
+    }
+
+    private void SetGameStarted()
+    {
+        TimeManager.Instance.SetGameStartedServerRpc();
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
     [ServerRpc]
@@ -181,5 +193,11 @@ public class PlayerController : NetworkBehaviour
         playerCamera.transform.parent = null;
         LeanTween.move(playerCamera.gameObject, initialPosition, .2f);
         LeanTween.rotate(playerCamera.gameObject, initialRotation, .2f);
+    }
+
+    [ClientRpc]
+    public void SetCanPlayerMoveClientRpc(bool value)
+    {
+        CanPlayerMove.Value = value;
     }
 }

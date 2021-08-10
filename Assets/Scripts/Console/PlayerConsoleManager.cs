@@ -19,13 +19,6 @@ public class PlayerConsoleManager : NetworkBehaviour
     NetworkChannel channel;
     [SerializeField] TMP_InputField inputField;
 
-    private void OnGUI() {
-        GUILayout.Space(50);
-        foreach(var player in NetworkManager.ConnectedClients)
-            GUILayout.Label(player.Key.ToString());
-        // GUILayout.Label(IsOwner.ToString());
-    }
-
     private void Awake() 
     {
         if (IsOwner)
@@ -44,7 +37,7 @@ public class PlayerConsoleManager : NetworkBehaviour
     public override void NetworkStart()
     {
         if (!IsLocalPlayer) return;
-        ConsoleLogger.gameObject.SetActive(true);
+        // ConsoleLogger.gameObject.SetActive(true);
         inputField = ConsoleLogger.inputField;
 
         channel = new NetworkChannel();
@@ -71,6 +64,7 @@ public class PlayerConsoleManager : NetworkBehaviour
         if (playerInput == null ) 
             return;
         playerInput.KeyboardMouse.SendMessage.started += SendMessage;
+        playerInput.KeyboardMouse.ToggleChat.started += ToggleChat;
         playerInput.Enable();
     }
 
@@ -80,7 +74,18 @@ public class PlayerConsoleManager : NetworkBehaviour
         
         if (playerInput == null) return;
         playerInput.KeyboardMouse.SendMessage.started -= SendMessage;
+        playerInput.KeyboardMouse.ToggleChat.started -= ToggleChat;
         playerInput.Disable();
+    }
+
+    private void ToggleChat(InputAction.CallbackContext context)
+    {
+        if (inputField.isFocused)
+            return;
+        inputField.Select();
+        var active = ConsoleLogger.gameObject.activeInHierarchy;
+        Cursor.lockState = active ? CursorLockMode.None : CursorLockMode.Locked;
+        ConsoleLogger.gameObject.SetActive(!active);
     }
 
     public void SendMessage(InputAction.CallbackContext context)

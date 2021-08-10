@@ -11,27 +11,39 @@ public class Unit : NetworkBehaviour
     PlayerController playerController;
     PlayerInput playerInput;
     Rigidbody rigidBody;
-    public bool CanControl {get; set;}
-    public bool isGrounded {get; private set;}
+    public bool CanControl { get; set; }
+    public bool isGrounded { get; private set; }
     [SerializeField] Transform groundCheckPos;
     [SerializeField] LayerMask groundMask;
     [SerializeField] float moveSpeed;
     Camera playerCamera;
+    [SerializeField] float gravityScale;
     float xRotation = 0f;
     [SerializeField] float horizontalRotateSpeed = 10f;
+    Vector3 newRotation;
     [SerializeField] float verticalRotateSpeed = 10f;
     [SerializeField] bool invertY = false;
     [SerializeField] float jumpForce = 5f;
 
     bool isMouseDown = false;
 
-    public NetworkVariableVector3 Position = new NetworkVariableVector3(new NetworkVariableSettings {
+    public NetworkVariableVector3 Position = new NetworkVariableVector3(new NetworkVariableSettings
+    {
         WritePermission = NetworkVariablePermission.ServerOnly,
         ReadPermission = NetworkVariablePermission.Everyone
     });
 
-    private void Awake() 
+    private void OnGUI()
     {
+        GUILayout.Space(50);
+        if (playerController)
+            GUILayout.Label(playerController.CanPlayerMove.Value.ToString());
+        // GUILayout.Label(IsOwner.ToString());
+    }
+
+    private void Awake()
+    {
+        newRotation = transform.eulerAngles;
         rigidBody = GetComponent<Rigidbody>();
     }
 
@@ -68,28 +80,32 @@ public class Unit : NetworkBehaviour
         Cursor.lockState = CursorLockMode.None;
     }
 
-    private void OnEnable() 
+    private void OnEnable()
     {
         if (playerInput != null)
             EnableInput();
     }
 
-    private void EnableInput() 
+    private void EnableInput()
     {
         playerInput.KeyboardMouse.Jump.started += Jump;
         playerInput.Enable();
     }
 
-    private void OnDisable() 
+    private void OnDisable()
     {
         if (playerInput != null)
             playerInput.KeyboardMouse.Jump.started -= Jump;
         // playerInput.Disable();
     }
 
-    private void Update() 
+    private void OnDrawGizmos() {
+        Gizmos.DrawSphere(groundCheckPos.position, .05f);
+    }
+
+    private void Update()
     {
-        if (!CanControl || !IsOwner) return;
+        if (!CanControl || !IsOwner || !playerController.CanPlayerMove.Value) return;
 
         isGrounded = Physics.CheckSphere(groundCheckPos.position, .05f, groundMask);
 
@@ -101,26 +117,40 @@ public class Unit : NetworkBehaviour
         xRotation = Mathf.Clamp(xRotation, -85f, 85f);
 
         playerCamera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        transform.Rotate(Vector3.up * mouseX);
 
+        newRotation.y += mouseX /* * horizontalRotateSpeed * Time.deltaTime */;
+        var quatRotation = Quaternion.Euler(newRotation);
+        transform.rotation = Quaternion.Slerp(transform.rotation, quatRotation, horizontalRotateSpeed * Time.deltaTime);
+        // transform.Rotate(Vector3.up * mouseX);
+
+    }
+
+    private void FixedUpdate()
+    {
+        var gravity = -gravityScale * Time.deltaTime;
+        rigidBody.AddForce(Vector3.up * gravity, ForceMode.Force);
+
+        if (!CanControl || !IsOwner || !playerController.CanPlayerMove.Value) return;
         Vector3 moveValue = playerInput.KeyboardMouse.Move.ReadValue<Vector2>();
-        
+
         moveValue.z = moveValue.y;
         moveValue.y = 0;
         var moveDirection = transform.right * moveValue.x + transform.forward * moveValue.z;
-        var newPosition = Vector3.Lerp(transform.position, transform.position + moveDirection, moveSpeed*Time.deltaTime);
-
         moveDirection *= moveSpeed * Time.deltaTime;
-        transform.position += moveDirection;
-
+        // moveDirection.y = -gravityScale * Time.deltaTime;
+        // rigidBody.AddForce(moveDirection * moveSpeed * Time.deltaTime);
+        // transform.position = Vector3.Lerp(transform.position, transform.position + moveDirection, moveSpeed*Time.deltaTime);
+        transform.Translate(moveDirection, Space.World);
         SubmitPositionRequestServerRpc(transform.position/*  + moveDirection */);
     }
-    
+
     private void Jump(InputAction.CallbackContext context)
     {
         if (context.started)
         {
-            if (!isGrounded) return;
+            if (!isGrounded || !CanControl ||
+                !IsOwner || !playerController.CanPlayerMove.Value)
+                return;
             GetComponent<Rigidbody>().AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
     }
