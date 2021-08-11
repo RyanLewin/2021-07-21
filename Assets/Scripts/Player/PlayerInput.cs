@@ -82,6 +82,14 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
                     ""interactions"": """"
+                },
+                {
+                    ""name"": ""Scope"",
+                    ""type"": ""Button"",
+                    ""id"": ""46a28f57-47fa-447b-a1f4-2e6b4c73815b"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """"
                 }
             ],
             ""bindings"": [
@@ -260,6 +268,17 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                     ""action"": ""ToggleChat"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""404b2bdf-4d79-497a-82e2-d662bd7f6f33"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Scope"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -275,6 +294,7 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
         m_KeyboardMouse_Jump = m_KeyboardMouse.FindAction("Jump", throwIfNotFound: true);
         m_KeyboardMouse_SendMessage = m_KeyboardMouse.FindAction("SendMessage", throwIfNotFound: true);
         m_KeyboardMouse_ToggleChat = m_KeyboardMouse.FindAction("ToggleChat", throwIfNotFound: true);
+        m_KeyboardMouse_Scope = m_KeyboardMouse.FindAction("Scope", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -341,6 +361,7 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
     private readonly InputAction m_KeyboardMouse_Jump;
     private readonly InputAction m_KeyboardMouse_SendMessage;
     private readonly InputAction m_KeyboardMouse_ToggleChat;
+    private readonly InputAction m_KeyboardMouse_Scope;
     public struct KeyboardMouseActions
     {
         private @PlayerInput m_Wrapper;
@@ -352,6 +373,7 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
         public InputAction @Jump => m_Wrapper.m_KeyboardMouse_Jump;
         public InputAction @SendMessage => m_Wrapper.m_KeyboardMouse_SendMessage;
         public InputAction @ToggleChat => m_Wrapper.m_KeyboardMouse_ToggleChat;
+        public InputAction @Scope => m_Wrapper.m_KeyboardMouse_Scope;
         public InputActionMap Get() { return m_Wrapper.m_KeyboardMouse; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -382,6 +404,9 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                 @ToggleChat.started -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnToggleChat;
                 @ToggleChat.performed -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnToggleChat;
                 @ToggleChat.canceled -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnToggleChat;
+                @Scope.started -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnScope;
+                @Scope.performed -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnScope;
+                @Scope.canceled -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnScope;
             }
             m_Wrapper.m_KeyboardMouseActionsCallbackInterface = instance;
             if (instance != null)
@@ -407,6 +432,9 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                 @ToggleChat.started += instance.OnToggleChat;
                 @ToggleChat.performed += instance.OnToggleChat;
                 @ToggleChat.canceled += instance.OnToggleChat;
+                @Scope.started += instance.OnScope;
+                @Scope.performed += instance.OnScope;
+                @Scope.canceled += instance.OnScope;
             }
         }
     }
@@ -420,5 +448,6 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
         void OnJump(InputAction.CallbackContext context);
         void OnSendMessage(InputAction.CallbackContext context);
         void OnToggleChat(InputAction.CallbackContext context);
+        void OnScope(InputAction.CallbackContext context);
     }
 }

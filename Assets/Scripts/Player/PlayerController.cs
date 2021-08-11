@@ -13,6 +13,7 @@ public class PlayerController : NetworkBehaviour
     LewinNetworkManager LewinNetworkManager => LewinNetworkManager.Instance;
     PlayerConsoleManager PlayerConsoleManager;
     public PlayerInput playerInput {get; private set;}
+    public bool canPlayerMove;
     public NetworkVariableBool CanPlayerMove = new NetworkVariableBool(new NetworkVariableSettings {
         WritePermission = NetworkVariablePermission.OwnerOnly,
         ReadPermission = NetworkVariablePermission.Everyone
@@ -39,6 +40,7 @@ public class PlayerController : NetworkBehaviour
     public override void NetworkStart()
     {
         if (!IsLocalPlayer) return;
+
         gameObject.name = $"{gameObject.name}_{NetworkManager.LocalClientId}";
         playerInput = new PlayerInput();
         EnableInput();
@@ -55,20 +57,25 @@ public class PlayerController : NetworkBehaviour
         else
             SubmitNameChangeServerRpc(playerName);
         PlayerConsoleManager.LogMessage($"{playerName} has joined.");
-        ConnectedPlayerServerRpc(NetworkManager.LocalClientId);
+        ConnectedPlayerServerRpc(OwnerClientId);
 
-        SpawnUnitServerRpc(OwnerClientId, NetworkManager.LocalClientId);
+        var spawnPoints = GameObject.FindGameObjectWithTag("SpawnPoints").transform;
+        var playerSpawn = new Transform[spawnPoints.childCount];
+        for(int i = 0; i < spawnPoints.childCount; i++)
+        {
+            playerSpawn[i] = spawnPoints.GetChild(i);
+        }
+        var spawnPoint = playerSpawn[OwnerClientId == 0 ? 0 : 1];
+        var playerSpawnPoint = spawnPoint.GetChild(0);
 
         playerCamera = Camera.main;
-        if (OwnerClientId > 0)
-        {
-            var camPos = playerCamera.transform.position;
-            camPos.z += 12.85f;
-            playerCamera.transform.position = camPos;
-            playerCamera.transform.eulerAngles = new Vector3(20, 180, 0);
-        }
-        initialPosition = playerCamera.transform.position;
-        initialRotation = playerCamera.transform.eulerAngles;
+        initialPosition = playerSpawnPoint.position;
+        initialRotation = playerSpawnPoint.eulerAngles;
+        playerCamera.transform.position = initialPosition;
+        playerCamera.transform.eulerAngles = initialRotation;
+
+        SpawnUnitServerRpc(spawnPoint.position, spawnPoint.rotation, NetworkManager.LocalClientId);
+
     }
 
     private void OnEnable() 
@@ -129,7 +136,7 @@ public class PlayerController : NetworkBehaviour
 
     private void SelectUnit(InputAction.CallbackContext context)
     {
-        if (context.started)
+        if (context.started && !selectedUnit)
         {
             Vector3 mouseScreenPos = playerInput.KeyboardMouse.PointerPosition.ReadValue<Vector2>();
             var mousePos = playerCamera.ScreenPointToRay(mouseScreenPos);
@@ -173,15 +180,9 @@ public class PlayerController : NetworkBehaviour
     }
 
     [ServerRpc]
-    private void SpawnUnitServerRpc(ulong ownerID, ulong localID)
+    private void SpawnUnitServerRpc(Vector3 spawnPoint, Quaternion rotation, ulong localID)
     {
-        var spawnPoints = GameObject.FindGameObjectWithTag("SpawnPoints").transform;
-        var playerSpawn = new Transform[spawnPoints.childCount];
-        for(int i = 0; i < spawnPoints.childCount; i++)
-        {
-            playerSpawn[i] = spawnPoints.GetChild(i);
-        }
-        selectedUnit = Instantiate(unitToSpawn, playerSpawn[ownerID == 0 ? 0 : 1].position, Quaternion.Euler(ownerID == 0 ? Vector3.zero : new Vector3(0,180,0)));
+        selectedUnit = Instantiate(unitToSpawn, spawnPoint, rotation);
         selectedUnit.GetComponent<NetworkObject>().SpawnWithOwnership(localID);
     }
 
@@ -198,6 +199,7 @@ public class PlayerController : NetworkBehaviour
     [ClientRpc]
     public void SetCanPlayerMoveClientRpc(bool value)
     {
-        CanPlayerMove.Value = value;
+        canPlayerMove = value;
+        // CanPlayerMove.Value = value;
     }
 }

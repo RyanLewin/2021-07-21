@@ -24,8 +24,10 @@ public class Unit : NetworkBehaviour
     [SerializeField] float verticalRotateSpeed = 10f;
     [SerializeField] bool invertY = false;
     [SerializeField] float jumpForce = 5f;
+    [SerializeField] float stepHeight;
+    Transform[] stepChecks;
 
-    bool isMouseDown = false;
+    bool scope = false;
 
     public NetworkVariableVector3 Position = new NetworkVariableVector3(new NetworkVariableSettings
     {
@@ -37,7 +39,7 @@ public class Unit : NetworkBehaviour
     {
         GUILayout.Space(50);
         if (playerController)
-            GUILayout.Label(playerController.CanPlayerMove.Value.ToString());
+            GUILayout.Label(playerController.canPlayerMove./* Value. */ToString());
         // GUILayout.Label(IsOwner.ToString());
     }
 
@@ -45,6 +47,13 @@ public class Unit : NetworkBehaviour
     {
         newRotation = transform.eulerAngles;
         rigidBody = GetComponent<Rigidbody>();
+
+        stepChecks = new Transform[4];
+        for (int i = 0; i < 4; ++i)
+        {
+            stepChecks[i] = groundCheckPos.GetChild(i);
+            stepChecks[i].transform.localPosition += Vector3.up * stepHeight;
+        }
     }
 
     public override void NetworkStart()
@@ -89,24 +98,42 @@ public class Unit : NetworkBehaviour
     private void EnableInput()
     {
         playerInput.KeyboardMouse.Jump.started += Jump;
+        playerInput.KeyboardMouse.Scope.started += ScopeSet;
         playerInput.Enable();
     }
 
     private void OnDisable()
     {
-        if (playerInput != null)
-            playerInput.KeyboardMouse.Jump.started -= Jump;
-        // playerInput.Disable();
-    }
+        if (playerInput == null) return;
 
-    private void OnDrawGizmos() {
-        Gizmos.DrawSphere(groundCheckPos.position, .05f);
+        playerInput.KeyboardMouse.Jump.started -= Jump;
+        playerInput.KeyboardMouse.Scope.started -= ScopeSet;
+        // playerInput.Disable();
     }
 
     private void Update()
     {
-        if (!CanControl || !IsOwner || !playerController.CanPlayerMove.Value) return;
+        if (!HasControl()) return;
 
+        Rotate();
+    }
+
+    private void FixedUpdate()
+    {
+        var gravity = -gravityScale * Time.deltaTime;
+        rigidBody.AddForce(Vector3.up * gravity, ForceMode.Force);
+
+        if (!HasControl()) return;
+        Run();
+    }
+
+    private bool HasControl()
+    {
+        return CanControl && IsOwner && playerController.canPlayerMove;
+    }
+
+    private void Rotate()
+    {
         isGrounded = Physics.CheckSphere(groundCheckPos.position, .05f, groundMask);
 
         var mouseDelta = playerInput.KeyboardMouse.PointerDelta.ReadValue<Vector2>();
@@ -118,29 +145,29 @@ public class Unit : NetworkBehaviour
 
         playerCamera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
 
-        newRotation.y += mouseX /* * horizontalRotateSpeed * Time.deltaTime */;
+        newRotation.y += mouseX;
         var quatRotation = Quaternion.Euler(newRotation);
         transform.rotation = Quaternion.Slerp(transform.rotation, quatRotation, horizontalRotateSpeed * Time.deltaTime);
-        // transform.Rotate(Vector3.up * mouseX);
-
     }
 
-    private void FixedUpdate()
+    private void Run()
     {
-        var gravity = -gravityScale * Time.deltaTime;
-        rigidBody.AddForce(Vector3.up * gravity, ForceMode.Force);
-
-        if (!CanControl || !IsOwner || !playerController.CanPlayerMove.Value) return;
         Vector3 moveValue = playerInput.KeyboardMouse.Move.ReadValue<Vector2>();
 
         moveValue.z = moveValue.y;
         moveValue.y = 0;
         var moveDirection = transform.right * moveValue.x + transform.forward * moveValue.z;
         moveDirection *= moveSpeed * Time.deltaTime;
-        // moveDirection.y = -gravityScale * Time.deltaTime;
-        // rigidBody.AddForce(moveDirection * moveSpeed * Time.deltaTime);
-        // transform.position = Vector3.Lerp(transform.position, transform.position + moveDirection, moveSpeed*Time.deltaTime);
         transform.Translate(moveDirection, Space.World);
+
+        foreach(var stepCheck in stepChecks)
+        {
+            if (Physics.Raycast(stepCheck.position, Vector3.down, out var hitInfo, stepHeight, groundMask))
+            {
+                transform.position += Vector3.up * (stepHeight - hitInfo.distance);
+                break;
+            }
+        }
         SubmitPositionRequestServerRpc(transform.position/*  + moveDirection */);
     }
 
@@ -148,8 +175,7 @@ public class Unit : NetworkBehaviour
     {
         if (context.started)
         {
-            if (!isGrounded || !CanControl ||
-                !IsOwner || !playerController.CanPlayerMove.Value)
+            if (!isGrounded || !HasControl())
                 return;
             GetComponent<Rigidbody>().AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
@@ -161,11 +187,11 @@ public class Unit : NetworkBehaviour
         Position.Value = newPos;
     }
 
-    private void MouseClick(InputAction.CallbackContext context)
+    private void ScopeSet(InputAction.CallbackContext context)
     {
         if (context.started)
-            isMouseDown = true;
+            scope = true;
         else if (context.canceled)
-            isMouseDown = false;
+            scope = false;
     }
 }

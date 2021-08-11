@@ -23,6 +23,7 @@ public class LewinNetworkManager : MonoBehaviour
             "Host" : NetworkManager.IsServer ? "Server" : "Client";
 
         GUILayout.Label("Mode: " + mode);
+        GUILayout.Label(NetworkManager.LocalClientId.ToString());
     }
 
     private void Awake()
@@ -57,8 +58,11 @@ public class LewinNetworkManager : MonoBehaviour
 
     public void OnDisconnect(ulong playerID)
     {
+        if (ConnectedPlayerList.Count == 0) return;
+
         if (PlayerConsoleManager.Instance)
             PlayerConsoleManager.Instance.LogMessage($"{ConnectedPlayers[playerID].Name.Value} has Left.");
+
         ConnectedPlayerList.Remove(ConnectedPlayers[playerID]);
         ConnectedPlayers.Remove(playerID);
     }

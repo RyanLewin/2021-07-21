@@ -84,7 +84,7 @@ public class PlayerConsoleManager : NetworkBehaviour
             return;
         inputField.Select();
         var active = ConsoleLogger.gameObject.activeInHierarchy;
-        Cursor.lockState = active ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.lockState = active ? CursorLockMode.Locked : CursorLockMode.None;
         ConsoleLogger.gameObject.SetActive(!active);
     }
 
