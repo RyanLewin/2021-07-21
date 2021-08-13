@@ -90,6 +90,14 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
                     ""interactions"": """"
+                },
+                {
+                    ""name"": ""Fire"",
+                    ""type"": ""Button"",
+                    ""id"": ""ad9738c1-1bbf-48ec-b3a4-3f0598f53b80"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """"
                 }
             ],
             ""bindings"": [
@@ -279,6 +287,17 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                     ""action"": ""Scope"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""634201bd-2963-405d-bac1-581dddb13093"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Fire"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -295,6 +314,7 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
         m_KeyboardMouse_SendMessage = m_KeyboardMouse.FindAction("SendMessage", throwIfNotFound: true);
         m_KeyboardMouse_ToggleChat = m_KeyboardMouse.FindAction("ToggleChat", throwIfNotFound: true);
         m_KeyboardMouse_Scope = m_KeyboardMouse.FindAction("Scope", throwIfNotFound: true);
+        m_KeyboardMouse_Fire = m_KeyboardMouse.FindAction("Fire", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -362,6 +382,7 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
     private readonly InputAction m_KeyboardMouse_SendMessage;
     private readonly InputAction m_KeyboardMouse_ToggleChat;
     private readonly InputAction m_KeyboardMouse_Scope;
+    private readonly InputAction m_KeyboardMouse_Fire;
     public struct KeyboardMouseActions
     {
         private @PlayerInput m_Wrapper;
@@ -374,6 +395,7 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
         public InputAction @SendMessage => m_Wrapper.m_KeyboardMouse_SendMessage;
         public InputAction @ToggleChat => m_Wrapper.m_KeyboardMouse_ToggleChat;
         public InputAction @Scope => m_Wrapper.m_KeyboardMouse_Scope;
+        public InputAction @Fire => m_Wrapper.m_KeyboardMouse_Fire;
         public InputActionMap Get() { return m_Wrapper.m_KeyboardMouse; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -407,6 +429,9 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                 @Scope.started -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnScope;
                 @Scope.performed -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnScope;
                 @Scope.canceled -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnScope;
+                @Fire.started -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnFire;
+                @Fire.performed -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnFire;
+                @Fire.canceled -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnFire;
             }
             m_Wrapper.m_KeyboardMouseActionsCallbackInterface = instance;
             if (instance != null)
@@ -435,6 +460,9 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                 @Scope.started += instance.OnScope;
                 @Scope.performed += instance.OnScope;
                 @Scope.canceled += instance.OnScope;
+                @Fire.started += instance.OnFire;
+                @Fire.performed += instance.OnFire;
+                @Fire.canceled += instance.OnFire;
             }
         }
     }
@@ -449,5 +477,6 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
         void OnSendMessage(InputAction.CallbackContext context);
         void OnToggleChat(InputAction.CallbackContext context);
         void OnScope(InputAction.CallbackContext context);
+        void OnFire(InputAction.CallbackContext context);
     }
 }

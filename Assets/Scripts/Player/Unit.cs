@@ -27,6 +27,11 @@ public class Unit : NetworkBehaviour
     [SerializeField] float stepHeight;
     Transform[] stepChecks;
 
+    [Space(10)]
+    public NetworkVariableFloat Health = new NetworkVariableFloat(100);
+    bool isDead = false;
+    [SerializeField] LayerMask bulletMask;
+
     bool scope = false;
 
     public NetworkVariableVector3 Position = new NetworkVariableVector3(new NetworkVariableSettings
@@ -34,6 +39,7 @@ public class Unit : NetworkBehaviour
         WritePermission = NetworkVariablePermission.ServerOnly,
         ReadPermission = NetworkVariablePermission.Everyone
     });
+
 
     private void OnGUI()
     {
@@ -58,7 +64,7 @@ public class Unit : NetworkBehaviour
 
     public override void NetworkStart()
     {
-        SubmitPositionRequestServerRpc(transform.position);
+        // SubmitPositionRequestServerRpc(transform.position);
     }
 
     public void Initialise(PlayerController playerController, PlayerInput playerInput, Camera playerCamera, ulong LocalClientID)
@@ -99,6 +105,7 @@ public class Unit : NetworkBehaviour
     {
         playerInput.KeyboardMouse.Jump.started += Jump;
         playerInput.KeyboardMouse.Scope.started += ScopeSet;
+        playerInput.KeyboardMouse.Fire.started += Fire;
         playerInput.Enable();
     }
 
@@ -108,6 +115,7 @@ public class Unit : NetworkBehaviour
 
         playerInput.KeyboardMouse.Jump.started -= Jump;
         playerInput.KeyboardMouse.Scope.started -= ScopeSet;
+        playerInput.KeyboardMouse.Fire.started -= Fire;
         // playerInput.Disable();
     }
 
@@ -120,11 +128,38 @@ public class Unit : NetworkBehaviour
 
     private void FixedUpdate()
     {
+
         var gravity = -gravityScale * Time.deltaTime;
         rigidBody.AddForce(Vector3.up * gravity, ForceMode.Force);
 
-        if (!HasControl()) return;
+        if (!CanControl || !IsOwner) return;
+
+        if (Health.Value <= 0 && !isDead)
+        {
+            isDead = true;
+            if (playerCamera)
+            {
+                playerCamera.transform.parent = null;
+            }
+            playerController.SetGamePausedServerRpc(true);
+            playerController.SpawnNewUnit();
+            // playerController.UnitDied.Value = true;
+            
+            OnDisable();
+            DespawnUnitServerRpc();
+            // Destroy(gameObject);
+            return;
+        }
+
+        if (!playerController.canPlayerMove) return;
+
         Run();
+    }
+
+    [ServerRpc]
+    private void DespawnUnitServerRpc()
+    {
+        GetComponent<NetworkObject>().Despawn(true);
     }
 
     private bool HasControl()
@@ -168,7 +203,7 @@ public class Unit : NetworkBehaviour
                 break;
             }
         }
-        SubmitPositionRequestServerRpc(transform.position/*  + moveDirection */);
+        // SubmitPositionRequestServerRpc(transform.position/*  + moveDirection */);
     }
 
     private void Jump(InputAction.CallbackContext context)
@@ -193,5 +228,44 @@ public class Unit : NetworkBehaviour
             scope = true;
         else if (context.canceled)
             scope = false;
+    }
+
+    private void Fire(InputAction.CallbackContext context)
+    {
+        if (context.started && HasControl())
+        {
+            ReceiveDamageServerRpc(transform.position, playerCamera.transform.forward);
+        }
+    }
+    
+    [ServerRpc]
+    public void ReceiveDamageServerRpc(Vector3 pos, Vector3 dir)
+    {
+        Debug.DrawRay(pos, dir, Color.red, 5f);
+        var hitResults = Physics.RaycastAll(pos, dir, 100f);
+        if (hitResults.Length > 0)
+        {
+            foreach(var hitResult in hitResults)
+            {
+                // print(hitResult.transform.name);
+                if (hitResult.transform.TryGetComponent<Unit>(out Unit other))
+                {
+                    // other.ReceiveDamageServerRpc(50);
+                    other.TakeDamage(50);
+                    if (playerController)
+                        playerController.GetComponent<PlayerConsoleManager>().LogMessage($"Hit {hitResult.transform.name}: {other.Health.Value}");
+                }
+            }
+        }
+        TimeManager.Instance.SetNextPlayerServerRpc();
+        // Health.Value -= amount;
+        // // return Health.Value;
+        // if (Health.Value  <= 0)
+        //     Destroy(gameObject);
+    }
+
+    public void TakeDamage(float amount)
+    {
+        Health.Value -= amount;
     }
 }

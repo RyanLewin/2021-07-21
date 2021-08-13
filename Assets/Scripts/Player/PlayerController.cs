@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.AI;
 using UnityEngine.Networking;
 using System.Collections;
+using PropertyListenerTool;
 
 public class PlayerController : NetworkBehaviour
 {
@@ -22,10 +23,12 @@ public class PlayerController : NetworkBehaviour
     // Transform[] playerSpawn;
     [SerializeField] Unit unitToSpawn;
     [SerializeField] Unit selectedUnit;
+    Transform spawnPoint;
     Vector3 initialPosition;
     Vector3 initialRotation;
     [SerializeField] Vector3 offsetToUnit;
 
+    public NetworkVariableBool UnitDied = new NetworkVariableBool(true);
     public NetworkVariableVector3 Position = new NetworkVariableVector3(new NetworkVariableSettings {
         WritePermission = NetworkVariablePermission.ServerOnly,
         ReadPermission = NetworkVariablePermission.Everyone
@@ -50,6 +53,7 @@ public class PlayerController : NetworkBehaviour
         UIManager.btnDeselect.onClick.AddListener(DeselectUnit);
         UIManager.btnDisconnect.onClick.AddListener(DisconnectPlayer);
         UIManager.btnChoose.onClick.AddListener(ChooseUnit);
+        UIManager.btnChoose.interactable = false;
 
         var playerName = UIManager.inputPlayerName.text;
         if (NetworkManager.IsServer)
@@ -65,7 +69,7 @@ public class PlayerController : NetworkBehaviour
         {
             playerSpawn[i] = spawnPoints.GetChild(i);
         }
-        var spawnPoint = playerSpawn[OwnerClientId == 0 ? 0 : 1];
+         spawnPoint = playerSpawn[OwnerClientId == 0 ? 0 : 1];
         var playerSpawnPoint = spawnPoint.GetChild(0);
 
         playerCamera = Camera.main;
@@ -165,9 +169,17 @@ public class PlayerController : NetworkBehaviour
         selectedUnit.Initialise(this, playerInput, playerCamera, NetworkManager.LocalClientId);
         selectedUnit.SetToControl();
         
-        UIManager.btnDisconnect.onClick.RemoveAllListeners();
-        UIManager.btnDisconnect.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Play";
-        UIManager.btnDisconnect.onClick.AddListener(SetGameStarted);
+        if (IsHost)
+        {
+            UIManager.btnDisconnect.onClick.RemoveAllListeners();
+            UIManager.btnDisconnect.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Play";
+            UIManager.btnDisconnect.onClick.AddListener(SetGameStarted);
+        }
+        else
+        {
+            UIManager.btnDisconnect.gameObject.SetActive(false);
+        }
+        SetGamePausedServerRpc(false);
         // if (IsHost)
         //     TimeManager.Instance.SetGameStartedServerRpc();
         // SetGameStartedServerRpc();
@@ -175,15 +187,30 @@ public class PlayerController : NetworkBehaviour
 
     private void SetGameStarted()
     {
-        TimeManager.Instance.SetGameStartedServerRpc();
+        TimeManager.Instance.SetGameStarted();
         Cursor.lockState = CursorLockMode.Locked;
+        UIManager.btnDisconnect.gameObject.SetActive(false);
+    }
+
+    [ServerRpc]
+    public void SetGamePausedServerRpc(bool value)
+    {
+        TimeManager.Instance.SetGamePaused(value);
+    }
+
+    public void SpawnNewUnit()
+    {
+        selectedUnit = null;
+        LeanTween.move(playerCamera.gameObject, initialPosition, .2f);
+        LeanTween.rotate(playerCamera.gameObject, initialRotation, .2f);
+        SpawnUnitServerRpc(spawnPoint.position, spawnPoint.rotation, NetworkManager.LocalClientId);
     }
 
     [ServerRpc]
     private void SpawnUnitServerRpc(Vector3 spawnPoint, Quaternion rotation, ulong localID)
     {
-        selectedUnit = Instantiate(unitToSpawn, spawnPoint, rotation);
-        selectedUnit.GetComponent<NetworkObject>().SpawnWithOwnership(localID);
+        var unit = Instantiate(unitToSpawn, spawnPoint, rotation);
+        unit.GetComponent<NetworkObject>().SpawnWithOwnership(localID);
     }
 
     private void DeselectUnit()

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using MLAPI;
 using MLAPI.Messaging;
+using MLAPI.NetworkVariable;
 
 public class TimeManager : MonoBehaviour
 {
@@ -12,6 +13,7 @@ public class TimeManager : MonoBehaviour
     public float timePerTurn = 5f;
     [SerializeField] private int playerTurn = 0;
     private bool gameStarted;
+    private NetworkVariableBool GamePaused = new NetworkVariableBool(true);
 
     private void Awake()
     {
@@ -25,37 +27,38 @@ public class TimeManager : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (gameStarted)
+        if (gameStarted && !GamePaused.Value)
         {
             timer += Time.deltaTime;
             if (timer >= timePerTurn)
             {
-                timer = 0;
                 SetNextPlayerServerRpc();
             }
         }
     }
 
-    private void TimerServerRpc()
-    {
-        
-    }
-
-    [ServerRpc]
-    public void SetGameStartedServerRpc()
+    public void SetGameStarted()
     {
         gameStarted = true;
         LewinNetworkManager.ConnectedPlayerList[0].SetCanPlayerMoveClientRpc(true);
     }
 
-    [ServerRpc]
-    private void SetNextPlayerServerRpc()
+    public void SetGamePaused(bool value, bool resetTimer = true)
     {
+        GamePaused.Value = value;
+        if (resetTimer)
+            timer = 0;
+    }
+
+    [ServerRpc]
+    public void SetNextPlayerServerRpc()
+    {
+        timer = 0;
         LewinNetworkManager.ConnectedPlayerList[playerTurn].SetCanPlayerMoveClientRpc(false);
         playerTurn++;
         if (playerTurn >= LewinNetworkManager.ConnectedPlayerList.Count)
             playerTurn = 0;
         LewinNetworkManager.ConnectedPlayerList[playerTurn].SetCanPlayerMoveClientRpc(true);
-        print(LewinNetworkManager.ConnectedPlayerList[playerTurn].Name.Value);
+        // print(LewinNetworkManager.ConnectedPlayerList[playerTurn].Name.Value);
     }
 }
