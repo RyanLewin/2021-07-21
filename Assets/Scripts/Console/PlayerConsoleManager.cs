@@ -69,6 +69,7 @@ public class PlayerConsoleManager : NetworkBehaviour
         playerInput.KeyboardMouse.ToggleChat.started += ToggleChat;
         playerInput.KeyboardMouse.CloseChat.started += CloseChat;
         playerInput.KeyboardMouse.FocusTextInput.started += FocusChatInput;
+        playerInput.KeyboardMouse.ScrollChat.started += ScrollChat;
         playerInput.Enable();
     }
 
@@ -81,7 +82,15 @@ public class PlayerConsoleManager : NetworkBehaviour
         playerInput.KeyboardMouse.ToggleChat.started -= ToggleChat;
         playerInput.KeyboardMouse.CloseChat.started -= CloseChat;
         playerInput.KeyboardMouse.FocusTextInput.started -= FocusChatInput;
+        playerInput.KeyboardMouse.ScrollChat.started -= ScrollChat;
         playerInput.Disable();
+    }
+
+    private void ScrollChat(InputAction.CallbackContext context)
+    {
+        if (!ConsoleLogger.openChat.activeInHierarchy)
+            return;
+        ConsoleLogger.ScrollText(context.ReadValue<float>() > 0 ? 1 : -1);
     }
 
     private void FocusChatInput(InputAction.CallbackContext context)

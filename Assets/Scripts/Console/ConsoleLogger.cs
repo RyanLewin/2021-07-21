@@ -19,6 +19,7 @@ public class ConsoleLogger : NetworkBehaviour
     [SerializeField] List<Message> messages = new List<Message>();
     [SerializeField] float lineHeight = 50f;
     [SerializeField] float heightOffset = 30f;
+    [SerializeField] float scrollAmount = 50;
 
     private void Awake() 
     {
@@ -28,13 +29,41 @@ public class ConsoleLogger : NetworkBehaviour
 
     public void SetShowFullChat(bool value)
     {
+        StopCoroutine("ScrollForce");
         openChat.SetActive(value);
         closedChat.SetActive(!value);
+        ResetScroll();
+    }
+
+    public void ScrollText(int dir)
+    {
+        StopCoroutine("ScrollForce");
+        StartCoroutine(ScrollForce(dir));
+        // var yPos = chatHistory.rectTransform.anchoredPosition;
+        // yPos.y += dir * scrollAmount * Time.deltaTime;
+        // chatHistory.rectTransform.anchoredPosition = yPos;
+    }
+
+    IEnumerator ScrollForce(int dir)
+    {
+        float amount = scrollAmount;
+        while(amount > 0)
+        {
+            var yPos = chatHistory.rectTransform.anchoredPosition;
+            yPos.y = Mathf.Clamp(yPos.y - (dir * amount * Time.deltaTime), -chatHistory.rectTransform.sizeDelta.y + lineHeight * 2, 0);
+            amount -= 5;
+            chatHistory.rectTransform.anchoredPosition = yPos;
+            yield return new WaitForFixedUpdate();
+        }
+    }
+
+    public void ResetScroll()
+    {
+        chatHistory.rectTransform.anchoredPosition = Vector2.zero;
     }
 
     public void AddMessage(string message)
     {
-        chatHistory.text += "\n" + message;
         var xPos = consoleParent.GetComponent<RectTransform>().sizeDelta.x / 2;
         var newMessage = Instantiate(consoleMessage, new Vector3(xPos, heightOffset, 0), Quaternion.identity, consoleParent.transform);
         newMessage.rectTransform.anchoredPosition = new Vector2(0,0);
@@ -51,6 +80,11 @@ public class ConsoleLogger : NetworkBehaviour
         }
         messages.Add(new Message(newMessage, count));
         StartCoroutine(FadeMessage(newMessage));
+
+        chatHistory.text += message + "\n";
+        var size = chatHistory.rectTransform.sizeDelta;
+        size.y += count * lineHeight;
+        chatHistory.rectTransform.sizeDelta = size;
     }
 
     IEnumerator FadeMessage(TextMeshProUGUI newMessage)

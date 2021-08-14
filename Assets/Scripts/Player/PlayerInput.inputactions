@@ -92,6 +92,14 @@
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": ""
+                },
+                {
+                    "name": "ScrollChat",
+                    "type": "Value",
+                    "id": "1bdd9d01-9356-4bff-95a1-97531f9012ec",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": ""
                 }
             ],
             "bindings": [
@@ -312,6 +320,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "FocusTextInput",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8e176d6b-4cbd-41ee-8f27-d02157e32eb5",
+                    "path": "<Mouse>/scroll/y",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ScrollChat",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

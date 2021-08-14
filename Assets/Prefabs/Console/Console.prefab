@@ -212,6 +212,7 @@ MonoBehaviour:
   inputField: {fileID: 5601238015467145659}
   lineHeight: 50
   heightOffset: 30
+  scrollAmount: 100
 --- !u!1 &3267947111696613881
 GameObject:
   m_ObjectHideFlags: 0

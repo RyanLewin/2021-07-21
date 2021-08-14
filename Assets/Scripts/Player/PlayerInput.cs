@@ -114,6 +114,14 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
                     ""interactions"": """"
+                },
+                {
+                    ""name"": ""ScrollChat"",
+                    ""type"": ""Value"",
+                    ""id"": ""1bdd9d01-9356-4bff-95a1-97531f9012ec"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """"
                 }
             ],
             ""bindings"": [
@@ -336,6 +344,17 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                     ""action"": ""FocusTextInput"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""8e176d6b-4cbd-41ee-8f27-d02157e32eb5"",
+                    ""path"": ""<Mouse>/scroll/y"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ScrollChat"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -355,6 +374,7 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
         m_KeyboardMouse_FocusTextInput = m_KeyboardMouse.FindAction("FocusTextInput", throwIfNotFound: true);
         m_KeyboardMouse_Scope = m_KeyboardMouse.FindAction("Scope", throwIfNotFound: true);
         m_KeyboardMouse_Fire = m_KeyboardMouse.FindAction("Fire", throwIfNotFound: true);
+        m_KeyboardMouse_ScrollChat = m_KeyboardMouse.FindAction("ScrollChat", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -425,6 +445,7 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
     private readonly InputAction m_KeyboardMouse_FocusTextInput;
     private readonly InputAction m_KeyboardMouse_Scope;
     private readonly InputAction m_KeyboardMouse_Fire;
+    private readonly InputAction m_KeyboardMouse_ScrollChat;
     public struct KeyboardMouseActions
     {
         private @PlayerInput m_Wrapper;
@@ -440,6 +461,7 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
         public InputAction @FocusTextInput => m_Wrapper.m_KeyboardMouse_FocusTextInput;
         public InputAction @Scope => m_Wrapper.m_KeyboardMouse_Scope;
         public InputAction @Fire => m_Wrapper.m_KeyboardMouse_Fire;
+        public InputAction @ScrollChat => m_Wrapper.m_KeyboardMouse_ScrollChat;
         public InputActionMap Get() { return m_Wrapper.m_KeyboardMouse; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -482,6 +504,9 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                 @Fire.started -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnFire;
                 @Fire.performed -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnFire;
                 @Fire.canceled -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnFire;
+                @ScrollChat.started -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnScrollChat;
+                @ScrollChat.performed -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnScrollChat;
+                @ScrollChat.canceled -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnScrollChat;
             }
             m_Wrapper.m_KeyboardMouseActionsCallbackInterface = instance;
             if (instance != null)
@@ -519,6 +544,9 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                 @Fire.started += instance.OnFire;
                 @Fire.performed += instance.OnFire;
                 @Fire.canceled += instance.OnFire;
+                @ScrollChat.started += instance.OnScrollChat;
+                @ScrollChat.performed += instance.OnScrollChat;
+                @ScrollChat.canceled += instance.OnScrollChat;
             }
         }
     }
@@ -536,5 +564,6 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
         void OnFocusTextInput(InputAction.CallbackContext context);
         void OnScope(InputAction.CallbackContext context);
         void OnFire(InputAction.CallbackContext context);
+        void OnScrollChat(InputAction.CallbackContext context);
     }
 }
