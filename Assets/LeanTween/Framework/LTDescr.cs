@@ -82,7 +82,7 @@ public class LTDescr
 
 	#if !UNITY_3_5 && !UNITY_4_0 && !UNITY_4_0_1 && !UNITY_4_1 && !UNITY_4_2 && !UNITY_4_3 && !UNITY_4_5
 	public RectTransform rectTransform;
-	public UnityEngine.UI.Text uiText;
+	public TMPro.TextMeshProUGUI uiText;
 	public UnityEngine.UI.Image uiImage;
 	public UnityEngine.UI.RawImage rawImage;
 	public UnityEngine.Sprite[] sprites;
@@ -450,7 +450,7 @@ public class LTDescr
 	public LTDescr setTextAlpha(){
 		this.type = TweenAction.TEXT_ALPHA;
 		this.initInternal = ()=>{
-			this.uiText = trans.GetComponent<UnityEngine.UI.Text>();
+			this.uiText = trans.GetComponent<TMPro.TextMeshProUGUI>();
 			this.fromInternal.x = this.uiText != null ? this.uiText.color.a : 1f;
 		};
 		this.easeInternal = ()=>{ textAlphaRecursive( trans, easeMethod().x, this.useRecursion ); };
@@ -583,7 +583,7 @@ public class LTDescr
 	public LTDescr setTextColor(){
 		this.type = TweenAction.TEXT_COLOR;
 		this.initInternal = ()=>{
-			this.uiText = trans.GetComponent<UnityEngine.UI.Text>();
+			this.uiText = trans.GetComponent<TMPro.TextMeshProUGUI>();
 			this.setFromColor( this.uiText != null ? this.uiText.color : Color.white );
 		};
 		this.easeInternal = ()=>{

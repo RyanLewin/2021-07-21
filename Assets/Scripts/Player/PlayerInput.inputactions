@@ -54,9 +54,25 @@
                     "interactions": ""
                 },
                 {
+                    "name": "CloseChat",
+                    "type": "Button",
+                    "id": "75535580-5b50-4b61-b065-57a946966b87",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": ""
+                },
+                {
                     "name": "ToggleChat",
                     "type": "Button",
                     "id": "0aec36f7-fef3-49a9-ae07-f7b9b8d331dc",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": ""
+                },
+                {
+                    "name": "FocusTextInput",
+                    "type": "Button",
+                    "id": "1a32225e-7c6b-4316-b013-51ac25c1d5b2",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": ""
@@ -274,6 +290,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "Fire",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "40442b5a-7434-49de-aff4-6e34464028e3",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "CloseChat",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "deff9b2a-9188-4556-8ff4-7e88ff16f971",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "FocusTextInput",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

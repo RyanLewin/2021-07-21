@@ -76,9 +76,25 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                     ""interactions"": """"
                 },
                 {
+                    ""name"": ""CloseChat"",
+                    ""type"": ""Button"",
+                    ""id"": ""75535580-5b50-4b61-b065-57a946966b87"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """"
+                },
+                {
                     ""name"": ""ToggleChat"",
                     ""type"": ""Button"",
                     ""id"": ""0aec36f7-fef3-49a9-ae07-f7b9b8d331dc"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """"
+                },
+                {
+                    ""name"": ""FocusTextInput"",
+                    ""type"": ""Button"",
+                    ""id"": ""1a32225e-7c6b-4316-b013-51ac25c1d5b2"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
                     ""interactions"": """"
@@ -298,6 +314,28 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                     ""action"": ""Fire"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""40442b5a-7434-49de-aff4-6e34464028e3"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""CloseChat"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""deff9b2a-9188-4556-8ff4-7e88ff16f971"",
+                    ""path"": ""<Keyboard>/tab"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""FocusTextInput"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -312,7 +350,9 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
         m_KeyboardMouse_PointerDelta = m_KeyboardMouse.FindAction("PointerDelta", throwIfNotFound: true);
         m_KeyboardMouse_Jump = m_KeyboardMouse.FindAction("Jump", throwIfNotFound: true);
         m_KeyboardMouse_SendMessage = m_KeyboardMouse.FindAction("SendMessage", throwIfNotFound: true);
+        m_KeyboardMouse_CloseChat = m_KeyboardMouse.FindAction("CloseChat", throwIfNotFound: true);
         m_KeyboardMouse_ToggleChat = m_KeyboardMouse.FindAction("ToggleChat", throwIfNotFound: true);
+        m_KeyboardMouse_FocusTextInput = m_KeyboardMouse.FindAction("FocusTextInput", throwIfNotFound: true);
         m_KeyboardMouse_Scope = m_KeyboardMouse.FindAction("Scope", throwIfNotFound: true);
         m_KeyboardMouse_Fire = m_KeyboardMouse.FindAction("Fire", throwIfNotFound: true);
     }
@@ -380,7 +420,9 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
     private readonly InputAction m_KeyboardMouse_PointerDelta;
     private readonly InputAction m_KeyboardMouse_Jump;
     private readonly InputAction m_KeyboardMouse_SendMessage;
+    private readonly InputAction m_KeyboardMouse_CloseChat;
     private readonly InputAction m_KeyboardMouse_ToggleChat;
+    private readonly InputAction m_KeyboardMouse_FocusTextInput;
     private readonly InputAction m_KeyboardMouse_Scope;
     private readonly InputAction m_KeyboardMouse_Fire;
     public struct KeyboardMouseActions
@@ -393,7 +435,9 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
         public InputAction @PointerDelta => m_Wrapper.m_KeyboardMouse_PointerDelta;
         public InputAction @Jump => m_Wrapper.m_KeyboardMouse_Jump;
         public InputAction @SendMessage => m_Wrapper.m_KeyboardMouse_SendMessage;
+        public InputAction @CloseChat => m_Wrapper.m_KeyboardMouse_CloseChat;
         public InputAction @ToggleChat => m_Wrapper.m_KeyboardMouse_ToggleChat;
+        public InputAction @FocusTextInput => m_Wrapper.m_KeyboardMouse_FocusTextInput;
         public InputAction @Scope => m_Wrapper.m_KeyboardMouse_Scope;
         public InputAction @Fire => m_Wrapper.m_KeyboardMouse_Fire;
         public InputActionMap Get() { return m_Wrapper.m_KeyboardMouse; }
@@ -423,9 +467,15 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                 @SendMessage.started -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnSendMessage;
                 @SendMessage.performed -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnSendMessage;
                 @SendMessage.canceled -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnSendMessage;
+                @CloseChat.started -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnCloseChat;
+                @CloseChat.performed -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnCloseChat;
+                @CloseChat.canceled -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnCloseChat;
                 @ToggleChat.started -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnToggleChat;
                 @ToggleChat.performed -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnToggleChat;
                 @ToggleChat.canceled -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnToggleChat;
+                @FocusTextInput.started -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnFocusTextInput;
+                @FocusTextInput.performed -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnFocusTextInput;
+                @FocusTextInput.canceled -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnFocusTextInput;
                 @Scope.started -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnScope;
                 @Scope.performed -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnScope;
                 @Scope.canceled -= m_Wrapper.m_KeyboardMouseActionsCallbackInterface.OnScope;
@@ -454,9 +504,15 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
                 @SendMessage.started += instance.OnSendMessage;
                 @SendMessage.performed += instance.OnSendMessage;
                 @SendMessage.canceled += instance.OnSendMessage;
+                @CloseChat.started += instance.OnCloseChat;
+                @CloseChat.performed += instance.OnCloseChat;
+                @CloseChat.canceled += instance.OnCloseChat;
                 @ToggleChat.started += instance.OnToggleChat;
                 @ToggleChat.performed += instance.OnToggleChat;
                 @ToggleChat.canceled += instance.OnToggleChat;
+                @FocusTextInput.started += instance.OnFocusTextInput;
+                @FocusTextInput.performed += instance.OnFocusTextInput;
+                @FocusTextInput.canceled += instance.OnFocusTextInput;
                 @Scope.started += instance.OnScope;
                 @Scope.performed += instance.OnScope;
                 @Scope.canceled += instance.OnScope;
@@ -475,7 +531,9 @@ public partial class @PlayerInput : IInputActionCollection2, IDisposable
         void OnPointerDelta(InputAction.CallbackContext context);
         void OnJump(InputAction.CallbackContext context);
         void OnSendMessage(InputAction.CallbackContext context);
+        void OnCloseChat(InputAction.CallbackContext context);
         void OnToggleChat(InputAction.CallbackContext context);
+        void OnFocusTextInput(InputAction.CallbackContext context);
         void OnScope(InputAction.CallbackContext context);
         void OnFire(InputAction.CallbackContext context);
     }

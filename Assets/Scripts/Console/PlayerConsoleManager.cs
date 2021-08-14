@@ -4,14 +4,14 @@ using MLAPI;
 using MLAPI.Serialization.Pooled;
 using MLAPI.Messaging;
 using MLAPI.Transports;
-using System.IO;
-using System.Text;
 using UnityEngine.InputSystem;
 using TMPro;
+using UnityEngine.EventSystems;
 
 public class PlayerConsoleManager : NetworkBehaviour
 {
     public static PlayerConsoleManager Instance;
+    string playerName;
     ConsoleLogger ConsoleLogger;
     PlayerInput playerInput;
     string latestMessage;
@@ -41,7 +41,9 @@ public class PlayerConsoleManager : NetworkBehaviour
         inputField = ConsoleLogger.inputField;
 
         channel = new NetworkChannel();
-        playerInput = GetComponent<PlayerController>().playerInput;
+        var playerController = GetComponent<PlayerController>();
+        playerInput = playerController.playerInput;
+        playerName = playerController.Name.Value;
 
         CustomMessagingManager.RegisterNamedMessageHandler("MessageName", (senderClientID, stream) =>
         {
@@ -65,33 +67,53 @@ public class PlayerConsoleManager : NetworkBehaviour
             return;
         playerInput.KeyboardMouse.SendMessage.started += SendMessage;
         playerInput.KeyboardMouse.ToggleChat.started += ToggleChat;
+        playerInput.KeyboardMouse.CloseChat.started += CloseChat;
+        playerInput.KeyboardMouse.FocusTextInput.started += FocusChatInput;
         playerInput.Enable();
     }
 
     private void OnDisable() {
         if (IsLocalPlayer && ConsoleLogger)
-            ConsoleLogger.gameObject.SetActive(false);
+            ConsoleLogger.SetShowFullChat(false);
         
         if (playerInput == null) return;
         playerInput.KeyboardMouse.SendMessage.started -= SendMessage;
         playerInput.KeyboardMouse.ToggleChat.started -= ToggleChat;
+        playerInput.KeyboardMouse.CloseChat.started -= CloseChat;
+        playerInput.KeyboardMouse.FocusTextInput.started -= FocusChatInput;
         playerInput.Disable();
+    }
+
+    private void FocusChatInput(InputAction.CallbackContext context)
+    {
+        if (!ConsoleLogger.openChat.activeInHierarchy)
+            return;
+        inputField.ActivateInputField();
+        inputField.Select();
+    }
+
+    private void CloseChat(InputAction.CallbackContext context)
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        ConsoleLogger.SetShowFullChat(false);
     }
 
     private void ToggleChat(InputAction.CallbackContext context)
     {
         if (inputField.isFocused)
             return;
+            
+        inputField.ActivateInputField();
         inputField.Select();
-        var active = ConsoleLogger.gameObject.activeInHierarchy;
+        var active = ConsoleLogger.openChat.activeInHierarchy;
         Cursor.lockState = active ? CursorLockMode.Locked : CursorLockMode.None;
-        ConsoleLogger.gameObject.SetActive(!active);
+        ConsoleLogger.SetShowFullChat(!active);
     }
 
     public void SendMessage(InputAction.CallbackContext context)
     {
         if (inputField.text == "") return;        
-        LogMessage(inputField.text);
+        LogMessage(inputField.text, playerName);
         inputField.text = "";
     }
 
@@ -105,8 +127,9 @@ public class PlayerConsoleManager : NetworkBehaviour
         return buffer;
     }
 
-    public void LogMessage(string messageToSend)
+    public void LogMessage(string messageToSend, string senderName)
     {
+        messageToSend = $"{senderName}: {messageToSend}";
         var buffer = SetMessageToSend(messageToSend);
         foreach(var client in NetworkManager.ConnectedClients)
         {
@@ -114,8 +137,9 @@ public class PlayerConsoleManager : NetworkBehaviour
         }
     }
 
-    public void LogMessage(string messageToSend, ulong clientID)
+    public void LogMessage(string messageToSend, string senderName, ulong clientID)
     {
+        messageToSend = $"{senderName}: {messageToSend}";
         var buffer = SetMessageToSend(messageToSend);
         print(clientID.ToString());
         CustomMessagingManager.SendNamedMessage("MessageName", clientID, buffer);

@@ -20,9 +20,12 @@ public class PlayerController : NetworkBehaviour
         ReadPermission = NetworkVariablePermission.Everyone
     });
     Camera playerCamera;
-    // Transform[] playerSpawn;
     [SerializeField] Unit unitToSpawn;
     [SerializeField] Unit selectedUnit;
+    public NetworkVariableBool HasUnitSelected = new NetworkVariableBool(new NetworkVariableSettings{
+        WritePermission = NetworkVariablePermission.OwnerOnly,
+        ReadPermission = NetworkVariablePermission.Everyone
+    });
     Transform spawnPoint;
     Vector3 initialPosition;
     Vector3 initialRotation;
@@ -39,7 +42,6 @@ public class PlayerController : NetworkBehaviour
         ReadPermission = NetworkVariablePermission.Everyone
     });
 
-    // Start is called before the first frame update
     public override void NetworkStart()
     {
         if (!IsLocalPlayer) return;
@@ -60,7 +62,7 @@ public class PlayerController : NetworkBehaviour
             Name.Value = playerName;
         else
             SubmitNameChangeServerRpc(playerName);
-        PlayerConsoleManager.LogMessage($"{playerName} has joined.");
+        PlayerConsoleManager.LogMessage($"{playerName} has joined.", "Server");
         ConnectedPlayerServerRpc(OwnerClientId);
 
         var spawnPoints = GameObject.FindGameObjectWithTag("SpawnPoints").transform;
@@ -164,10 +166,11 @@ public class PlayerController : NetworkBehaviour
 
     private void ChooseUnit()
     {
-        // selectedUnit = Instantiate(unitToSpawn, Vector3.zero + Vector3.up * 2, Quaternion.identity);
-        // selectedUnit.GetComponent<NetworkObject>().SpawnWithOwnership(NetworkManager.LocalClientId);
+        if (!selectedUnit) return;
+        
         selectedUnit.Initialise(this, playerInput, playerCamera, NetworkManager.LocalClientId);
         selectedUnit.SetToControl();
+        HasUnitSelected.Value = true;
         
         if (IsHost)
         {
@@ -180,13 +183,18 @@ public class PlayerController : NetworkBehaviour
             UIManager.btnDisconnect.gameObject.SetActive(false);
         }
         SetGamePausedServerRpc(false);
-        // if (IsHost)
-        //     TimeManager.Instance.SetGameStartedServerRpc();
-        // SetGameStartedServerRpc();
     }
 
     private void SetGameStarted()
     {
+        foreach(var player in LewinNetworkManager.ConnectedPlayerList)
+        {
+            if (!player.HasUnitSelected.Value) 
+            {
+                PlayerConsoleManager.LogMessage($"{player.Name.Value} isn't ready yet", "Server", OwnerClientId);
+                return;
+            }
+        }
         TimeManager.Instance.SetGameStarted();
         Cursor.lockState = CursorLockMode.Locked;
         UIManager.btnDisconnect.gameObject.SetActive(false);
@@ -201,6 +209,7 @@ public class PlayerController : NetworkBehaviour
     public void SpawnNewUnit()
     {
         selectedUnit = null;
+        HasUnitSelected.Value = false;
         LeanTween.move(playerCamera.gameObject, initialPosition, .2f);
         LeanTween.rotate(playerCamera.gameObject, initialRotation, .2f);
         SpawnUnitServerRpc(spawnPoint.position, spawnPoint.rotation, NetworkManager.LocalClientId);
@@ -215,9 +224,12 @@ public class PlayerController : NetworkBehaviour
 
     private void DeselectUnit()
     {
+        if (!selectedUnit) return;
+
         selectedUnit.ReleaseControl();
         UIManager.btnChoose.interactable = false;
         selectedUnit = null;
+        HasUnitSelected.Value = false;
         playerCamera.transform.parent = null;
         LeanTween.move(playerCamera.gameObject, initialPosition, .2f);
         LeanTween.rotate(playerCamera.gameObject, initialRotation, .2f);
@@ -226,7 +238,8 @@ public class PlayerController : NetworkBehaviour
     [ClientRpc]
     public void SetCanPlayerMoveClientRpc(bool value)
     {
+        if (selectedUnit)
+            selectedUnit.GetComponent<Rigidbody>().velocity = Vector3.zero;
         canPlayerMove = value;
-        // CanPlayerMove.Value = value;
     }
 }

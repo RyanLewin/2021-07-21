@@ -9,6 +9,7 @@ using UnityEngine.InputSystem;
 public class Unit : NetworkBehaviour
 {
     PlayerController playerController;
+    TimeManager TimeManager;
     PlayerInput playerInput;
     Rigidbody rigidBody;
     public bool CanControl { get; set; }
@@ -43,9 +44,11 @@ public class Unit : NetworkBehaviour
 
     private void OnGUI()
     {
+        if (!IsOwner) return;
         GUILayout.Space(50);
         if (playerController)
-            GUILayout.Label(playerController.canPlayerMove./* Value. */ToString());
+            GUILayout.Label(playerController.canPlayerMove.ToString());
+        GUILayout.Label(rigidBody.angularVelocity.ToString());
         // GUILayout.Label(IsOwner.ToString());
     }
 
@@ -64,6 +67,7 @@ public class Unit : NetworkBehaviour
 
     public override void NetworkStart()
     {
+        TimeManager = TimeManager.Instance;
         // SubmitPositionRequestServerRpc(transform.position);
     }
 
@@ -92,7 +96,6 @@ public class Unit : NetworkBehaviour
     public void ReleaseControl()
     {
         CanControl = false;
-        Cursor.lockState = CursorLockMode.None;
     }
 
     private void OnEnable()
@@ -116,7 +119,6 @@ public class Unit : NetworkBehaviour
         playerInput.KeyboardMouse.Jump.started -= Jump;
         playerInput.KeyboardMouse.Scope.started -= ScopeSet;
         playerInput.KeyboardMouse.Fire.started -= Fire;
-        // playerInput.Disable();
     }
 
     private void Update()
@@ -128,7 +130,6 @@ public class Unit : NetworkBehaviour
 
     private void FixedUpdate()
     {
-
         var gravity = -gravityScale * Time.deltaTime;
         rigidBody.AddForce(Vector3.up * gravity, ForceMode.Force);
 
@@ -141,6 +142,7 @@ public class Unit : NetworkBehaviour
             {
                 playerCamera.transform.parent = null;
             }
+            Cursor.lockState = CursorLockMode.None;
             playerController.SetGamePausedServerRpc(true);
             playerController.SpawnNewUnit();
             // playerController.UnitDied.Value = true;
@@ -151,7 +153,7 @@ public class Unit : NetworkBehaviour
             return;
         }
 
-        if (!playerController.canPlayerMove) return;
+        if (!HasControl()) return;
 
         Run();
     }
@@ -164,7 +166,7 @@ public class Unit : NetworkBehaviour
 
     private bool HasControl()
     {
-        return CanControl && IsOwner && playerController.canPlayerMove;
+        return CanControl && IsOwner && playerController.canPlayerMove && !TimeManager.IsGamePaused;
     }
 
     private void Rotate()
@@ -253,7 +255,7 @@ public class Unit : NetworkBehaviour
                     // other.ReceiveDamageServerRpc(50);
                     other.TakeDamage(50);
                     if (playerController)
-                        playerController.GetComponent<PlayerConsoleManager>().LogMessage($"Hit {hitResult.transform.name}: {other.Health.Value}");
+                        playerController.GetComponent<PlayerConsoleManager>().LogMessage($"Dealt {hitResult.transform.name} {other.Health.Value} damage", "Server");
                 }
             }
         }

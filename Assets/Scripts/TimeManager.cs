@@ -5,7 +5,7 @@ using MLAPI;
 using MLAPI.Messaging;
 using MLAPI.NetworkVariable;
 
-public class TimeManager : MonoBehaviour
+public class TimeManager : NetworkBehaviour
 {
     public static TimeManager Instance;
     private LewinNetworkManager LewinNetworkManager;
@@ -13,7 +13,11 @@ public class TimeManager : MonoBehaviour
     public float timePerTurn = 5f;
     [SerializeField] private int playerTurn = 0;
     private bool gameStarted;
-    private NetworkVariableBool GamePaused = new NetworkVariableBool(true);
+    public bool IsGamePaused { get; private set; }
+    private NetworkVariableBool GamePaused = new NetworkVariableBool(new NetworkVariableSettings{
+        WritePermission = NetworkVariablePermission.Everyone,
+        ReadPermission = NetworkVariablePermission.Everyone
+    });
 
     private void Awake()
     {
@@ -27,6 +31,7 @@ public class TimeManager : MonoBehaviour
 
     private void FixedUpdate()
     {
+        IsGamePaused = GamePaused.Value;
         if (gameStarted && !GamePaused.Value)
         {
             timer += Time.deltaTime;

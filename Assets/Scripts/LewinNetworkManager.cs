@@ -61,7 +61,7 @@ public class LewinNetworkManager : MonoBehaviour
         if (ConnectedPlayerList.Count == 0) return;
 
         if (PlayerConsoleManager.Instance)
-            PlayerConsoleManager.Instance.LogMessage($"{ConnectedPlayers[playerID].Name.Value} has Left.");
+            PlayerConsoleManager.Instance.LogMessage($"{ConnectedPlayers[playerID].Name.Value} has Left.", "Server");
 
         ConnectedPlayerList.Remove(ConnectedPlayers[playerID]);
         ConnectedPlayers.Remove(playerID);
