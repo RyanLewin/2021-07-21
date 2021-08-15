@@ -62,6 +62,7 @@ public class PlayerController : NetworkBehaviour
             Name.Value = playerName;
         else
             SubmitNameChangeServerRpc(playerName);
+        PlayerConsoleManager.SetPlayerName(playerName);
         PlayerConsoleManager.LogMessage($"{playerName} has joined.", "Server");
         ConnectedPlayerServerRpc(OwnerClientId);
 

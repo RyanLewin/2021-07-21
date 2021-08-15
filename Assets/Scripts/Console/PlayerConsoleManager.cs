@@ -43,7 +43,6 @@ public class PlayerConsoleManager : NetworkBehaviour
         channel = new NetworkChannel();
         var playerController = GetComponent<PlayerController>();
         playerInput = playerController.playerInput;
-        playerName = playerController.Name.Value;
 
         CustomMessagingManager.RegisterNamedMessageHandler("MessageName", (senderClientID, stream) =>
         {
@@ -54,6 +53,11 @@ public class PlayerConsoleManager : NetworkBehaviour
                 ConsoleLogger.Instance.AddMessage(latestMessage);
             }
         });
+    }
+
+    public void SetPlayerName(string name)
+    {
+        playerName = name;
     }
 
     private void OnEnable() 
@@ -121,7 +125,7 @@ public class PlayerConsoleManager : NetworkBehaviour
 
     public void SendMessage(InputAction.CallbackContext context)
     {
-        if (inputField.text == "") return;        
+        if (inputField.text == "") return;
         LogMessage(inputField.text, playerName);
         inputField.text = "";
     }

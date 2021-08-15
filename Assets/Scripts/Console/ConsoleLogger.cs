@@ -50,7 +50,7 @@ public class ConsoleLogger : NetworkBehaviour
         while(amount > 0)
         {
             var yPos = chatHistory.rectTransform.anchoredPosition;
-            yPos.y = Mathf.Clamp(yPos.y - (dir * amount * Time.deltaTime), -chatHistory.rectTransform.sizeDelta.y + lineHeight * 2, 0);
+            yPos.y = Mathf.Clamp(yPos.y - (dir * amount * Time.deltaTime), -chatHistory.rectTransform.sizeDelta.y + lineHeight, 0);
             amount -= 5;
             chatHistory.rectTransform.anchoredPosition = yPos;
             yield return new WaitForFixedUpdate();
