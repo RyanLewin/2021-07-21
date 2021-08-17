@@ -19,7 +19,7 @@ public class PlayerConsoleManager : NetworkBehaviour
     NetworkChannel channel;
     [SerializeField] TMP_InputField inputField;
 
-    private void Awake() 
+    private void Awake()
     {
         if (IsOwner)
         {
@@ -60,14 +60,14 @@ public class PlayerConsoleManager : NetworkBehaviour
         playerName = name;
     }
 
-    private void OnEnable() 
+    private void OnEnable()
     {
         EnableInput();
     }
 
-    private void EnableInput() 
+    private void EnableInput()
     {
-        if (playerInput == null ) 
+        if (playerInput == null)
             return;
         playerInput.KeyboardMouse.SendMessage.started += SendMessage;
         playerInput.KeyboardMouse.ToggleChat.started += ToggleChat;
@@ -77,10 +77,11 @@ public class PlayerConsoleManager : NetworkBehaviour
         playerInput.Enable();
     }
 
-    private void OnDisable() {
+    private void OnDisable()
+    {
         if (IsLocalPlayer && ConsoleLogger)
-            ConsoleLogger.SetShowFullChat(false);
-        
+            ConsoleLogger.SetShowFullChat(false, false);
+
         if (playerInput == null) return;
         playerInput.KeyboardMouse.SendMessage.started -= SendMessage;
         playerInput.KeyboardMouse.ToggleChat.started -= ToggleChat;
@@ -107,7 +108,6 @@ public class PlayerConsoleManager : NetworkBehaviour
 
     private void CloseChat(InputAction.CallbackContext context)
     {
-        Cursor.lockState = CursorLockMode.Locked;
         ConsoleLogger.SetShowFullChat(false);
     }
 
@@ -115,11 +115,10 @@ public class PlayerConsoleManager : NetworkBehaviour
     {
         if (inputField.isFocused)
             return;
-            
+
         inputField.ActivateInputField();
         inputField.Select();
         var active = ConsoleLogger.openChat.activeInHierarchy;
-        Cursor.lockState = active ? CursorLockMode.Locked : CursorLockMode.None;
         ConsoleLogger.SetShowFullChat(!active);
     }
 
@@ -144,7 +143,7 @@ public class PlayerConsoleManager : NetworkBehaviour
     {
         messageToSend = $"{senderName}: {messageToSend}";
         var buffer = SetMessageToSend(messageToSend);
-        foreach(var client in NetworkManager.ConnectedClients)
+        foreach (var client in NetworkManager.ConnectedClients)
         {
             CustomMessagingManager.SendNamedMessage("MessageName", client.Key, buffer);
         }

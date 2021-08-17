@@ -9,6 +9,7 @@ using UnityEngine.InputSystem;
 public class Unit : NetworkBehaviour
 {
     PlayerController playerController;
+    PlayerConsoleManager playerConsoleManager;
     TimeManager TimeManager;
     PlayerInput playerInput;
     Rigidbody rigidBody;
@@ -29,6 +30,7 @@ public class Unit : NetworkBehaviour
     Transform[] stepChecks;
 
     [Space(10)]
+    [SerializeField] bool swapPlayerOnShoot;
     public NetworkVariableFloat Health = new NetworkVariableFloat(100);
     bool isDead = false;
     [SerializeField] LayerMask bulletMask;
@@ -41,16 +43,14 @@ public class Unit : NetworkBehaviour
         ReadPermission = NetworkVariablePermission.Everyone
     });
 
-
-    private void OnGUI()
-    {
-        if (!IsOwner) return;
-        GUILayout.Space(50);
-        if (playerController)
-            GUILayout.Label(playerController.canPlayerMove.ToString());
-        GUILayout.Label(rigidBody.angularVelocity.ToString());
-        // GUILayout.Label(IsOwner.ToString());
-    }
+    // private void OnGUI()
+    // {
+    //     if (!IsOwner) return;
+    //     GUILayout.Space(50);
+    //     if (playerController)
+    //         GUILayout.Label(playerController.isPlayersTurn.ToString());
+    //     GUILayout.Label(rigidBody.angularVelocity.ToString());
+    // }
 
     private void Awake()
     {
@@ -68,7 +68,6 @@ public class Unit : NetworkBehaviour
     public override void NetworkStart()
     {
         TimeManager = TimeManager.Instance;
-        // SubmitPositionRequestServerRpc(transform.position);
     }
 
     public void Initialise(PlayerController playerController, PlayerInput playerInput, Camera playerCamera, ulong LocalClientID)
@@ -77,8 +76,7 @@ public class Unit : NetworkBehaviour
         this.playerInput = playerInput;
         EnableInput();
         this.playerCamera = playerCamera;
-
-        // RequestOwnerChangeServerRpc(LocalClientID);
+        playerConsoleManager = playerController.GetComponent<PlayerConsoleManager>();
     }
 
     [ServerRpc]
@@ -87,16 +85,8 @@ public class Unit : NetworkBehaviour
         GetComponent<NetworkObject>().ChangeOwnership(ownerID);
     }
 
-    public void SetToControl()
-    {
-        CanControl = true;
-        // Cursor.lockState = CursorLockMode.Locked;
-    }
-
-    public void ReleaseControl()
-    {
-        CanControl = false;
-    }
+    public void SetToControl() => CanControl = true;
+    public void ReleaseControl() => CanControl = false;
 
     private void OnEnable()
     {
@@ -121,9 +111,30 @@ public class Unit : NetworkBehaviour
         playerInput.KeyboardMouse.Fire.started -= Fire;
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (!IsOwner) return;
+        if (other.CompareTag("KillSwitch"))
+        {
+            if (other.TryGetComponent<KillSwitch>(out var killSwitch))
+            {
+                var team = killSwitch.GetTeamNumber;
+                if (team != playerController.TeamNumber)
+                {
+                    var message = $"Game Over - {playerController.Name.Value} wins!";
+                    print(message);
+                    playerConsoleManager.LogMessage(message, "Server");
+                    TimeManager.SetGameEnded();
+                    ShowGameEndClientRpc(true);
+                    isDead = true;
+                }
+            }
+        }
+    }
+
     private void Update()
     {
-        if (!HasControl()) return;
+        if (!HasControl() || isDead) return;
 
         Rotate();
     }
@@ -145,15 +156,21 @@ public class Unit : NetworkBehaviour
             Cursor.lockState = CursorLockMode.None;
             playerController.SetGamePausedServerRpc(true);
             playerController.SpawnNewUnit();
-            // playerController.UnitDied.Value = true;
-            
+
             OnDisable();
             DespawnUnitServerRpc();
-            // Destroy(gameObject);
             return;
         }
 
-        if (!HasControl()) return;
+        if (!HasControl() || TimeManager.IsGamePaused)
+        {
+            if (TimeManager.IsGamePaused && HasControl())
+            {
+                if (playerInput.KeyboardMouse.Move.ReadValue<Vector2>().magnitude != 0)
+                    playerController.SetGamePausedServerRpc(false);
+            }
+            return;
+        }
 
         Run();
     }
@@ -166,12 +183,12 @@ public class Unit : NetworkBehaviour
 
     private bool HasControl()
     {
-        return CanControl && IsOwner && playerController.canPlayerMove && !TimeManager.IsGamePaused;
+        return CanControl && IsOwner && playerController.isPlayersTurn;
     }
 
     private void Rotate()
     {
-        isGrounded = Physics.CheckSphere(groundCheckPos.position, .05f, groundMask);
+        isGrounded = Physics.CheckSphere(groundCheckPos.position, .05f, groundMask, QueryTriggerInteraction.Ignore);
 
         var mouseDelta = playerInput.KeyboardMouse.PointerDelta.ReadValue<Vector2>();
         var mouseX = mouseDelta.x * horizontalRotateSpeed * Time.deltaTime;
@@ -197,7 +214,7 @@ public class Unit : NetworkBehaviour
         moveDirection *= moveSpeed * Time.deltaTime;
         transform.Translate(moveDirection, Space.World);
 
-        foreach(var stepCheck in stepChecks)
+        foreach (var stepCheck in stepChecks)
         {
             if (Physics.Raycast(stepCheck.position, Vector3.down, out var hitInfo, stepHeight, groundMask))
             {
@@ -205,7 +222,6 @@ public class Unit : NetworkBehaviour
                 break;
             }
         }
-        // SubmitPositionRequestServerRpc(transform.position/*  + moveDirection */);
     }
 
     private void Jump(InputAction.CallbackContext context)
@@ -214,7 +230,9 @@ public class Unit : NetworkBehaviour
         {
             if (!isGrounded || !HasControl())
                 return;
-            GetComponent<Rigidbody>().AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            var velocity = rigidBody.velocity;
+            velocity.y = jumpForce;
+            rigidBody.velocity = velocity;
         }
     }
 
@@ -236,38 +254,47 @@ public class Unit : NetworkBehaviour
     {
         if (context.started && HasControl())
         {
-            ReceiveDamageServerRpc(transform.position, playerCamera.transform.forward);
+            ReceiveDamageServerRpc(transform.position, playerCamera.transform.forward, swapPlayerOnShoot);
         }
     }
-    
+
     [ServerRpc]
-    public void ReceiveDamageServerRpc(Vector3 pos, Vector3 dir)
+    public void ReceiveDamageServerRpc(Vector3 pos, Vector3 dir, bool swapPlayer)
     {
         Debug.DrawRay(pos, dir, Color.red, 5f);
         var hitResults = Physics.RaycastAll(pos, dir, 100f);
         if (hitResults.Length > 0)
         {
-            foreach(var hitResult in hitResults)
+            foreach (var hitResult in hitResults)
             {
-                // print(hitResult.transform.name);
                 if (hitResult.transform.TryGetComponent<Unit>(out Unit other))
                 {
-                    // other.ReceiveDamageServerRpc(50);
                     other.TakeDamage(50);
                     if (playerController)
-                        playerController.GetComponent<PlayerConsoleManager>().LogMessage($"Dealt {hitResult.transform.name} {other.Health.Value} damage", "Server");
+                        playerController.GetComponent<PlayerConsoleManager>().LogMessage($"Dealt {other.Health.Value} damage", "Server");
                 }
             }
         }
-        TimeManager.Instance.SetNextPlayerServerRpc();
-        // Health.Value -= amount;
-        // // return Health.Value;
-        // if (Health.Value  <= 0)
-        //     Destroy(gameObject);
+
+        if (swapPlayer)
+        {
+            TimeManager.Instance.SetNextPlayerServerRpc();
+            TimeManager.Instance.ResetTimerServerRpc();
+        }
+        else if (TimeManager.Instance.IsGamePaused)
+        {
+            TimeManager.Instance.SetGamePaused(false);
+        }
     }
 
     public void TakeDamage(float amount)
     {
         Health.Value -= amount;
+    }
+
+    [ClientRpc]
+    public void ShowGameEndClientRpc(bool value)
+    {
+        UIManager.Instance.ShowGameEnd(value);
     }
 }

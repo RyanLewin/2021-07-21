@@ -21,14 +21,16 @@ public class ConsoleLogger : NetworkBehaviour
     [SerializeField] float heightOffset = 30f;
     [SerializeField] float scrollAmount = 50;
 
-    private void Awake() 
+    private void Awake()
     {
         Instance = this;
         SetShowFullChat(false);
+        Cursor.lockState = CursorLockMode.None;
     }
 
-    public void SetShowFullChat(bool value)
+    public void SetShowFullChat(bool value, bool lockCursor = true)
     {
+        if (lockCursor) Cursor.lockState = value ? CursorLockMode.None : CursorLockMode.Locked;
         StopCoroutine("ScrollForce");
         openChat.SetActive(value);
         closedChat.SetActive(!value);
@@ -47,7 +49,7 @@ public class ConsoleLogger : NetworkBehaviour
     IEnumerator ScrollForce(int dir)
     {
         float amount = scrollAmount;
-        while(amount > 0)
+        while (amount > 0)
         {
             var yPos = chatHistory.rectTransform.anchoredPosition;
             yPos.y = Mathf.Clamp(yPos.y - (dir * amount * Time.deltaTime), -chatHistory.rectTransform.sizeDelta.y + lineHeight, 0);
@@ -66,13 +68,13 @@ public class ConsoleLogger : NetworkBehaviour
     {
         var xPos = consoleParent.GetComponent<RectTransform>().sizeDelta.x / 2;
         var newMessage = Instantiate(consoleMessage, new Vector3(xPos, heightOffset, 0), Quaternion.identity, consoleParent.transform);
-        newMessage.rectTransform.anchoredPosition = new Vector2(0,0);
+        newMessage.rectTransform.anchoredPosition = new Vector2(0, 0);
 
         newMessage.text = message;
         count = 0;
         count = Overflow(newMessage);
 
-        foreach(var oldMessage in messages)
+        foreach (var oldMessage in messages)
         {
             var pos = oldMessage.message.rectTransform.anchoredPosition;
             pos.y += count * lineHeight;
@@ -92,9 +94,10 @@ public class ConsoleLogger : NetworkBehaviour
         yield return new WaitForSeconds(3f);
         var alphaZeroColour = newMessage.color;
         alphaZeroColour.a = 0;
-        LeanTween.colorText(newMessage.rectTransform, alphaZeroColour, 2f).setOnComplete(() => { 
+        LeanTween.colorText(newMessage.rectTransform, alphaZeroColour, 2f).setOnComplete(() =>
+        {
             messages.RemoveAt(0);
-            Destroy(newMessage.gameObject); 
+            Destroy(newMessage.gameObject);
         });
     }
 
@@ -102,7 +105,7 @@ public class ConsoleLogger : NetworkBehaviour
     public int Overflow(TextMeshProUGUI newMessage)
     {
         count++;
-        if (count > 20) 
+        if (count > 20)
         {
             return count;
         }

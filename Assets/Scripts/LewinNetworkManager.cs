@@ -8,11 +8,9 @@ public class LewinNetworkManager : MonoBehaviour
     public static LewinNetworkManager Instance;
     ConsoleLogger ConsoleLogger => ConsoleLogger.Instance;
     NetworkManager NetworkManager => NetworkManager.Singleton;
-    [SerializeField] GameObject objMenuUI;
-    [SerializeField] GameObject objPlayUI;
 
-    public Dictionary<ulong, PlayerController> ConnectedPlayers {get; private set;}
-    public List<PlayerController> ConnectedPlayerList {get; private set;}
+    public Dictionary<ulong, PlayerController> ConnectedPlayers;
+    public List<PlayerController> ConnectedPlayerList { get; private set; }
     // [SerializeField] private GameObject btnHost;
     // [SerializeField] private GameObject btnJoin;
     // [SerializeField] private GameObject btnServer;
@@ -38,22 +36,38 @@ public class LewinNetworkManager : MonoBehaviour
         NetworkManager.OnClientDisconnectCallback += OnDisconnect;
     }
 
-    public void HostGame() => NetworkManager.StartHost();
+    private void OnDestroy()
+    {
+        if (!NetworkManager)
+            return;
+        NetworkManager.OnClientDisconnectCallback -= OnDisconnect;
+    }
+
+    public void HostGame()
+    {
+        print("Host");
+        NetworkManager.StartHost();
+    }
     public void JoinGame() => NetworkManager.StartClient();
     public void HostServer() => NetworkManager.StartServer();
 
     public void OnConnect(ulong playerID, PlayerController player)
     {
-        // foreach(var host in connectedPlayers)
-        //     PlayerConsoleManager.Instance.LogMessage($"Playing against {host.Value}.", playerID);
         ConnectedPlayers.Add(playerID, player);
         ConnectedPlayerList.Add(player);
+        print("Adding");
+        foreach (var host in ConnectedPlayers)
+            print(host.Key);
+
+        if (NetworkManager.IsHost)
+        {
+            GameManager.Instance.SetConnectedPlayerCountServerRpc(ConnectedPlayerList.Count);
+        }
     }
 
-    public void Disconnected(ulong playerID)
+    public void Disconnected()
     {
-        objMenuUI.SetActive(true);
-        objPlayUI.SetActive(false);
+        UIManager.Instance.SetUI(UIWindows.Menu);
     }
 
     public void OnDisconnect(ulong playerID)
@@ -65,11 +79,18 @@ public class LewinNetworkManager : MonoBehaviour
 
         ConnectedPlayerList.Remove(ConnectedPlayers[playerID]);
         ConnectedPlayers.Remove(playerID);
+        print("Removing");
+        foreach (var host in ConnectedPlayers)
+            print(host.Key);
+
+        if (NetworkManager.IsHost)
+        {
+            GameManager.Instance.SetConnectedPlayerCountServerRpc(ConnectedPlayerList.Count);
+        }
     }
 
     public void HideMenuUI()
     {
-        objMenuUI.SetActive(false);
-        objPlayUI.SetActive(true);
+        UIManager.Instance.SetUI(UIWindows.PlayUI);
     }
 }

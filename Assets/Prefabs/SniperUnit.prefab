@@ -108,17 +108,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fde26671e8751444bbe8b393be98f098, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  groundCheckPos: {fileID: 3799432758386821313}
+  groundCheckPos: {fileID: 1286122789858433041, guid: 1223719470cab9d4ba1fbe29ecbcaaa2, type: 3}
   groundMask:
     serializedVersion: 2
-    m_Bits: 64
-  moveSpeed: 10
-  horizontalRotateSpeed: 50
+    m_Bits: 320
+  moveSpeed: 4
+  gravityScale: 400
+  horizontalRotateSpeed: 100
   verticalRotateSpeed: 30
   invertY: 0
-  jumpForce: 5
+  jumpForce: 6
+  stepHeight: 0.4
+  swapPlayerOnShoot: 0
+  Health:
+    m_InternalValue: 50
+  bulletMask:
+    serializedVersion: 2
+    m_Bits: 0
   Position:
-    m_InternalValue: {x: 0, y: 0.8613131, z: -3.5}
+    m_InternalValue: {x: -1.5, y: 0.8613131, z: -3.5}
 --- !u!114 &3799432759236906377
 MonoBehaviour:
   m_ObjectHideFlags: 0

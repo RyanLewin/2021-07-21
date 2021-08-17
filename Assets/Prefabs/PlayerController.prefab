@@ -45,11 +45,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e110cbe54f5b864d95437556f3917de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  UICanvasPrefab: {fileID: 6474121112392640465, guid: 71bea4d5e3b189c4986f4cf276ad79a0, type: 3}
+  isPlayersTurn: 0
+  CanPlayerMove:
+    m_InternalValue: 0
   unitToSpawn: {fileID: 1286122788042822784, guid: 1223719470cab9d4ba1fbe29ecbcaaa2, type: 3}
   selectedUnit: {fileID: 0}
-  moveSpeed: 0
+  HasUnitSelected:
+    m_InternalValue: 0
+  birdsEyeViewCamPosition: {fileID: 0}
   offsetToUnit: {x: 0, y: 0.5, z: 0}
-  rotationToUnit: {x: 0, y: 0, z: 0}
+  UnitDied:
+    m_InternalValue: 1
   Position:
     m_InternalValue: {x: 0, y: 0, z: 0}
   Name:
@@ -83,3 +90,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ef17493cd857b14786aad8fc2cd2a2b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputField: {fileID: 0}

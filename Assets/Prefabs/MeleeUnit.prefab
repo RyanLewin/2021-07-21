@@ -112,14 +112,19 @@ MonoBehaviour:
   groundCheckPos: {fileID: 1286122789858433041}
   groundMask:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 320
   moveSpeed: 5
   gravityScale: 400
   horizontalRotateSpeed: 100
   verticalRotateSpeed: 30
   invertY: 0
-  jumpForce: 3
+  jumpForce: 4
   stepHeight: 0.4
+  Health:
+    m_InternalValue: 100
+  bulletMask:
+    serializedVersion: 2
+    m_Bits: 0
   Position:
     m_InternalValue: {x: -1.5, y: 0.8613131, z: -3.5}
 --- !u!114 &1286122788042822788
