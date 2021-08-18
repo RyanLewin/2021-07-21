@@ -109,6 +109,9 @@ public class Unit : NetworkBehaviour
         playerInput.KeyboardMouse.Jump.started -= Jump;
         playerInput.KeyboardMouse.Scope.started -= ScopeSet;
         playerInput.KeyboardMouse.Fire.started -= Fire;
+        
+        if (playerCamera)
+            playerCamera.transform.parent = null;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -122,11 +125,9 @@ public class Unit : NetworkBehaviour
                 if (team != playerController.TeamNumber)
                 {
                     var message = $"Game Over - {playerController.Name.Value} wins!";
-                    print(message);
+                    // print(message);
                     playerConsoleManager.LogMessage(message, "Server");
-                    TimeManager.SetGameEnded();
-                    ShowGameEndClientRpc(true);
-                    isDead = true;
+                    GameEndClientRpc(true);
                 }
             }
         }
@@ -293,8 +294,10 @@ public class Unit : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void ShowGameEndClientRpc(bool value)
+    public void GameEndClientRpc(bool value)
     {
+        TimeManager.SetGameEnded();
+        isDead = true;
         UIManager.Instance.ShowGameEnd(value);
     }
 }

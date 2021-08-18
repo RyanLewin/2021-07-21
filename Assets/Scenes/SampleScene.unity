@@ -9371,6 +9371,10 @@ PrefabInstance:
       value: NetworkManager
       objectReference: {fileID: 0}
     - target: {fileID: 5420278903390103121, guid: a90b125075bbbfa47991b5a838b52f4f, type: 3}
+      propertyPath: DontDestroy
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5420278903390103121, guid: a90b125075bbbfa47991b5a838b52f4f, type: 3}
       propertyPath: NetworkConfig.PlayerPrefabHash
       value: Unity.Multiplayer.MLAPI.Runtime MLAPI.Configuration.NullableBoolSerializable
       objectReference: {fileID: 0}

@@ -68,8 +68,9 @@ public class PlayerController : NetworkBehaviour
         PlayerConsoleManager.SetPlayerInput(playerInput);
 
         UIManager.btnDeselect.onClick.AddListener(DeselectUnit);
-        UIManager.btnDisconnect.onClick.AddListener(DisconnectPlayer);
-        UIManager.btnGameEndDisconnect.onClick.AddListener(DisconnectPlayer);
+        UIManager.SetDisconnectButton(this);
+        // UIManager.btnDisconnect.onClick.AddListener(DisconnectPlayer);
+        // UIManager.btnGameEndDisconnect.onClick.AddListener(DisconnectPlayer);
         UIManager.btnGameEndDisconnect.onClick.AddListener(() => UIManager.gameEndUI.SetActive(false));
         UIManager.btnChoose.onClick.AddListener(ChooseUnit);
         UIManager.btnChoose.interactable = false;
@@ -163,7 +164,7 @@ public class PlayerController : NetworkBehaviour
             LewinNetworkManager.Disconnected();
             if (IsHost)
                 LewinNetworkManager.OnDisconnect(OwnerClientId);
-            Destroy(NetworkManager.Singleton.gameObject);
+            // Destroy(NetworkManager.Singleton.gameObject);
         }
         NetworkManager.StopClient();
         if (IsHost)

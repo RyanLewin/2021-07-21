@@ -14,9 +14,6 @@ public class UIManager : MonoBehaviour
 
     [Space(5f)]
     public TMP_InputField inputPlayerName;
-    public Button btnHost;
-    public Button btnJoin;
-    public Button btnServer;
 
     [Space(5f)]
     public Button btnDeselect;
@@ -32,18 +29,15 @@ public class UIManager : MonoBehaviour
         Instance = this;
     }
 
-    private void Start()
+    public void SetDisconnectButton(PlayerController playerController)
     {
-        // btnHost.onClick.RemoveAllListeners();
-        // btnJoin.onClick.RemoveAllListeners();
-        // btnServer.onClick.RemoveAllListeners();
-
-        // btnHost.onClick.AddListener(() => {SetUI(UIWindows.PlayUI);});
-        // btnHost.onClick.AddListener(LewinNetworkManager.Instance.HostGame);
-        // btnJoin.onClick.AddListener(() => {SetUI(UIWindows.PlayUI);});
-        // btnJoin.onClick.AddListener(LewinNetworkManager.Instance.JoinGame);
-        // btnServer.onClick.AddListener(() => {SetUI(UIWindows.PlayUI);});
-        // btnServer.onClick.AddListener(LewinNetworkManager.Instance.HostServer);
+        btnGameEndDisconnect.onClick.AddListener(() => 
+        {
+            if (playerController != null)
+                playerController.DisconnectPlayer();
+            else
+                UnityEngine.SceneManagement.SceneManager.LoadScene("SampleScene");
+        });
     }
 
     public void ShowGameEnd(bool value)
@@ -57,11 +51,6 @@ public class UIManager : MonoBehaviour
         objPlayUI.SetActive(UIToOpen == UIWindows.PlayUI ? true : false);
         gameEndUI.SetActive(UIToOpen == UIWindows.GameEndUI ? true : false);
     }
-
-    // private void FixedUpdate()
-    // {
-
-    // }
 }
 
 public enum UIWindows
