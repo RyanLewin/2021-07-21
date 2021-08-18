@@ -44,12 +44,14 @@ public class TimeManager : NetworkBehaviour
     private void FixedUpdate()
     {
         IsGamePaused = GamePaused.Value;
-        if (gameStarted && !GamePaused.Value)
+        if (gameStarted && !GamePaused.Value && (IsHost || IsServer))
         {
-            if (IsHost || IsServer) IncreaseTimerServerRpc(Time.deltaTime);
+            // print(gameStarted + " - " + !GamePaused.Value + " - " + timer.Value);
+            timer.Value += Time.deltaTime;
+            // IncreaseTimerServerRpc(Time.deltaTime);
             if (timer.Value >= timePerTurn)
             {
-                SetNextPlayerServerRpc();
+                SetNextPlayer();
             }
             UpdateTimerClientRpc(timePerTurn - timer.Value);
         }
@@ -65,7 +67,6 @@ public class TimeManager : NetworkBehaviour
     [ServerRpc]
     private void IncreaseTimerServerRpc(float deltaTime)
     {
-        timer.Value += deltaTime;
     }
 
     [ServerRpc]
@@ -74,7 +75,8 @@ public class TimeManager : NetworkBehaviour
         timer.Value = 0;
     }
 
-    public void SetGameStarted()
+    [ServerRpc(RequireOwnership = false)]
+    public void SetGameStartedServerRpc()
     {
         gameStarted = true;
         GameEnded.Value = false;
@@ -97,8 +99,7 @@ public class TimeManager : NetworkBehaviour
         GameEnded.Value = true;
     }
 
-    [ServerRpc]
-    public void SetNextPlayerServerRpc()
+    public void SetNextPlayer()
     {
         timer.Value = 0;
         var oldPlayer = LewinNetworkManager.ConnectedPlayerList[playerTurn];

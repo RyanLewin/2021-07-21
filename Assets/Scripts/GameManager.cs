@@ -19,8 +19,7 @@ public class GameManager : NetworkBehaviour
         Instance = this;
     }
 
-    [ServerRpc]
-    public void SetConnectedPlayerCountServerRpc(int count)
+    public void SetConnectedPlayerCount(int count)
     {
         ConnectedPlayerCount.Value = count;
     }

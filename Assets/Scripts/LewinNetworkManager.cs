@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using MLAPI;
+using MLAPI.Messaging;
 
 public class LewinNetworkManager : MonoBehaviour
 {
@@ -51,23 +52,13 @@ public class LewinNetworkManager : MonoBehaviour
     public void JoinGame() => NetworkManager.StartClient();
     public void HostServer() => NetworkManager.StartServer();
 
-    public void OnConnect(ulong playerID, PlayerController player)
+    [ServerRpc]
+    public void OnConnectServerRpc(ulong playerID, PlayerController player)
     {
         ConnectedPlayers.Add(playerID, player);
         ConnectedPlayerList.Add(player);
-        print("Adding");
-        foreach (var host in ConnectedPlayers)
-            print(host.Key);
-
-        if (NetworkManager.IsHost)
-        {
-            GameManager.Instance.SetConnectedPlayerCountServerRpc(ConnectedPlayerList.Count);
-        }
-    }
-
-    public void Disconnected()
-    {
-        UIManager.Instance.SetUI(UIWindows.Menu);
+        if (NetworkManager.IsHost || NetworkManager.IsServer)
+            GameManager.Instance.SetConnectedPlayerCount(ConnectedPlayerList.Count);
     }
 
     public void OnDisconnect(ulong playerID)
@@ -79,13 +70,10 @@ public class LewinNetworkManager : MonoBehaviour
 
         ConnectedPlayerList.Remove(ConnectedPlayers[playerID]);
         ConnectedPlayers.Remove(playerID);
-        print("Removing");
-        foreach (var host in ConnectedPlayers)
-            print(host.Key);
 
-        if (NetworkManager.IsHost)
+        if (NetworkManager.IsHost || NetworkManager.IsServer)
         {
-            GameManager.Instance.SetConnectedPlayerCountServerRpc(ConnectedPlayerList.Count);
+            GameManager.Instance.SetConnectedPlayerCount(ConnectedPlayerList.Count);
         }
     }
 

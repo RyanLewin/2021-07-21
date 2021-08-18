@@ -110,8 +110,7 @@ public class Unit : NetworkBehaviour
         playerInput.KeyboardMouse.Scope.started -= ScopeSet;
         playerInput.KeyboardMouse.Fire.started -= Fire;
         
-        if (playerCamera)
-            playerCamera.transform.parent = null;
+        if (playerCamera) playerCamera.transform.parent = null;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -279,7 +278,7 @@ public class Unit : NetworkBehaviour
 
         if (swapPlayer)
         {
-            TimeManager.Instance.SetNextPlayerServerRpc();
+            TimeManager.Instance.SetNextPlayer();
             TimeManager.Instance.ResetTimerServerRpc();
         }
         else if (TimeManager.Instance.IsGamePaused)

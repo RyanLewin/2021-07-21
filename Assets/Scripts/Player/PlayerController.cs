@@ -60,7 +60,6 @@ public class PlayerController : NetworkBehaviour
     public override void NetworkStart()
     {
         if (!IsLocalPlayer) return;
-
         gameObject.name = $"{gameObject.name}_{NetworkManager.LocalClientId}";
         playerInput = new PlayerInput();
         EnableInput();
@@ -150,7 +149,7 @@ public class PlayerController : NetworkBehaviour
     [ServerRpc]
     private void ConnectedPlayerServerRpc(ulong id)
     {
-        LewinNetworkManager.OnConnect(id, this);
+        LewinNetworkManager.OnConnectServerRpc(id, this);
     }
 
     public void DisconnectPlayer()
@@ -159,9 +158,9 @@ public class PlayerController : NetworkBehaviour
         // Cursor.lockState = CursorLockMode.None;
         // Instantiate(UICanvasPrefab);
 
+        UIManager.Instance.SetUI(UIWindows.Menu);
         if (LewinNetworkManager)
         {
-            LewinNetworkManager.Disconnected();
             if (IsHost)
                 LewinNetworkManager.OnDisconnect(OwnerClientId);
             // Destroy(NetworkManager.Singleton.gameObject);
@@ -210,16 +209,16 @@ public class PlayerController : NetworkBehaviour
         selectedUnit.SetToControl();
         HasUnitSelected.Value = true;
 
-        if (IsHost)
-        {
+        // if (IsHost)
+        // {
             UIManager.btnDisconnect.onClick.RemoveAllListeners();
             UIManager.btnDisconnect.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Play";
             UIManager.btnDisconnect.onClick.AddListener(SetGameStarted);
-        }
-        else
-        {
-            UIManager.btnDisconnect.gameObject.SetActive(false);
-        }
+        // }
+        // else
+        // {
+        //     UIManager.btnDisconnect.gameObject.SetActive(false);
+        // }
         // SetGamePausedServerRpc(false);
     }
 
@@ -233,9 +232,14 @@ public class PlayerController : NetworkBehaviour
                 return;
             }
         }
-        TimeManager.Instance.SetGameStarted();
+        TimeManager.Instance.SetGameStartedServerRpc();
         Cursor.lockState = CursorLockMode.Locked;
         UIManager.btnDisconnect.gameObject.SetActive(false);
+    }
+
+    [ServerRpc]
+    private void SetGameStartedServerRpc()
+    {
     }
 
     [ServerRpc]
