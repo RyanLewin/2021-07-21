@@ -44,11 +44,7 @@ public class LewinNetworkManager : MonoBehaviour
         NetworkManager.OnClientDisconnectCallback -= OnDisconnect;
     }
 
-    public void HostGame()
-    {
-        print("Host");
-        NetworkManager.StartHost();
-    }
+    public void HostGame() => NetworkManager.StartHost();
     public void JoinGame() => NetworkManager.StartClient();
     public void HostServer() => NetworkManager.StartServer();
 
@@ -66,7 +62,7 @@ public class LewinNetworkManager : MonoBehaviour
         if (ConnectedPlayerList.Count == 0) return;
 
         if (PlayerConsoleManager.Instance)
-            PlayerConsoleManager.Instance.LogMessage($"{ConnectedPlayers[playerID].Name.Value} has Left.", "Server");
+            PlayerConsoleManager.Instance.LogMessageServerRpc($"{ConnectedPlayers[playerID].Name.Value} has Left.", "Server");
 
         ConnectedPlayerList.Remove(ConnectedPlayers[playerID]);
         ConnectedPlayers.Remove(playerID);
@@ -74,11 +70,16 @@ public class LewinNetworkManager : MonoBehaviour
         if (NetworkManager.IsHost || NetworkManager.IsServer)
         {
             GameManager.Instance.SetConnectedPlayerCount(ConnectedPlayerList.Count);
+            if (NetworkManager.IsServer && ConnectedPlayerList.Count == 0)
+            {
+                NetworkManager.StopServer();
+                UnityEngine.SceneManagement.SceneManager.LoadScene("SampleScene");
+            }
         }
     }
 
     public void HideMenuUI()
     {
-        UIManager.Instance.SetUI(UIWindows.PlayUI);
+        UIManager.Instance.SetUI(UIWindows.UnitSelection);
     }
 }

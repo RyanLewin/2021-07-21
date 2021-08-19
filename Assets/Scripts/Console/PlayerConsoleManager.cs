@@ -125,7 +125,7 @@ public class PlayerConsoleManager : NetworkBehaviour
     public void SendMessage(InputAction.CallbackContext context)
     {
         if (inputField.text == "") return;
-        LogMessage(inputField.text, playerName);
+        LogMessageServerRpc(inputField.text, playerName);
         inputField.text = "";
     }
 
@@ -139,7 +139,8 @@ public class PlayerConsoleManager : NetworkBehaviour
         return buffer;
     }
 
-    public void LogMessage(string messageToSend, string senderName)
+    [ServerRpc]
+    public void LogMessageServerRpc(string messageToSend, string senderName)
     {
         messageToSend = $"{senderName}: {messageToSend}";
         var buffer = SetMessageToSend(messageToSend);
@@ -149,7 +150,8 @@ public class PlayerConsoleManager : NetworkBehaviour
         }
     }
 
-    public void LogMessage(string messageToSend, string senderName, ulong clientID)
+    [ServerRpc]
+    public void LogMessageServerRpc(string messageToSend, string senderName, ulong clientID)
     {
         messageToSend = $"{senderName}: {messageToSend}";
         var buffer = SetMessageToSend(messageToSend);

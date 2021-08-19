@@ -17,7 +17,8 @@ public class TimeManager : NetworkBehaviour
     });
     public float timePerTurn = 5f;
     [SerializeField] private int playerTurn = 0;
-    private bool gameStarted;
+    public NetworkVariableBool GameStarted;
+    // public bool IsGameStarted { get { return GameStarted; } }
     public bool IsGamePaused { get; private set; }
     private NetworkVariableBool GamePaused = new NetworkVariableBool(new NetworkVariableSettings
     {
@@ -44,7 +45,7 @@ public class TimeManager : NetworkBehaviour
     private void FixedUpdate()
     {
         IsGamePaused = GamePaused.Value;
-        if (gameStarted && !GamePaused.Value && (IsHost || IsServer))
+        if (GameStarted.Value && !GamePaused.Value && (IsHost || IsServer))
         {
             // print(gameStarted + " - " + !GamePaused.Value + " - " + timer.Value);
             timer.Value += Time.deltaTime;
@@ -65,11 +66,6 @@ public class TimeManager : NetworkBehaviour
     }
 
     [ServerRpc]
-    private void IncreaseTimerServerRpc(float deltaTime)
-    {
-    }
-
-    [ServerRpc]
     public void ResetTimerServerRpc()
     {
         timer.Value = 0;
@@ -78,7 +74,7 @@ public class TimeManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void SetGameStartedServerRpc()
     {
-        gameStarted = true;
+        GameStarted.Value = true;
         GameEnded.Value = false;
         LewinNetworkManager.ConnectedPlayerList[0].SetPlayersTurnClientRpc(true);
     }
@@ -94,7 +90,6 @@ public class TimeManager : NetworkBehaviour
 
     public void SetGameEnded()
     {
-        Cursor.lockState = CursorLockMode.None;
         SetGamePaused(true);
         GameEnded.Value = true;
     }
@@ -102,6 +97,8 @@ public class TimeManager : NetworkBehaviour
     public void SetNextPlayer()
     {
         timer.Value = 0;
+        if (LewinNetworkManager.ConnectedPlayerList.Count == 1) return;
+        
         var oldPlayer = LewinNetworkManager.ConnectedPlayerList[playerTurn];
         ClientRpcParams clientRpcSendParams = new ClientRpcParams
         {

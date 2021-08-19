@@ -30,7 +30,10 @@ public class ConsoleLogger : NetworkBehaviour
 
     public void SetShowFullChat(bool value, bool lockCursor = true)
     {
-        if (lockCursor) Cursor.lockState = value ? CursorLockMode.None : CursorLockMode.Locked;
+        if (value) 
+            Cursor.lockState = CursorLockMode.None;
+        else
+            UIManager.Instance.SetLockMode();
         StopCoroutine("ScrollForce");
         openChat.SetActive(value);
         closedChat.SetActive(!value);

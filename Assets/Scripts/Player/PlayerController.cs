@@ -3,10 +3,6 @@ using MLAPI;
 using MLAPI.Messaging;
 using MLAPI.NetworkVariable;
 using UnityEngine.InputSystem;
-using UnityEngine.AI;
-using UnityEngine.Networking;
-using System.Collections;
-using PropertyListenerTool;
 
 public class PlayerController : NetworkBehaviour
 {
@@ -36,7 +32,7 @@ public class PlayerController : NetworkBehaviour
     Vector3 relativeCamPosition;
     Vector3 initialRotation;
     Vector3 relativeCamRotation;
-    [SerializeField] Vector3 offsetToUnit;
+    public Vector3 cameraPlayerOffset;
 
     public NetworkVariableBool UnitDied = new NetworkVariableBool(true);
     public NetworkVariableVector3 Position = new NetworkVariableVector3(new NetworkVariableSettings
@@ -80,7 +76,7 @@ public class PlayerController : NetworkBehaviour
         else
             SubmitNameChangeServerRpc(playerName);
         PlayerConsoleManager.SetPlayerName(playerName);
-        PlayerConsoleManager.LogMessage($"{playerName} has joined.", "Server");
+        PlayerConsoleManager.LogMessageServerRpc($"{playerName} has joined.", "Server");
         ConnectedPlayerServerRpc(OwnerClientId);
 
         var spawnPoints = GameObject.FindGameObjectWithTag("SpawnPoints").transform;
@@ -158,6 +154,7 @@ public class PlayerController : NetworkBehaviour
         // Cursor.lockState = CursorLockMode.None;
         // Instantiate(UICanvasPrefab);
 
+        Cursor.lockState = CursorLockMode.None;
         UIManager.Instance.SetUI(UIWindows.Menu);
         if (LewinNetworkManager)
         {
@@ -191,10 +188,12 @@ public class PlayerController : NetworkBehaviour
                         // pointerPos = hit.point;
                         UIManager.btnChoose.interactable = true;
                         LeanTween.rotateLocal(playerCamera.gameObject, selectedUnit.transform.eulerAngles, .2f);
-                        LeanTween.move(playerCamera.gameObject, selectedUnit.transform.position + offsetToUnit, .2f).setOnComplete(() =>
+                        LeanTween.move(playerCamera.gameObject, selectedUnit.transform.position + cameraPlayerOffset, .2f).setOnComplete(() =>
                         {
                             playerCamera.transform.parent = selectedUnit.transform;
                         });
+                        Cursor.lockState = CursorLockMode.None;
+                        UIManager.SetUI(UIWindows.UnitSelection);
                     }
                 }
             }
@@ -220,26 +219,36 @@ public class PlayerController : NetworkBehaviour
         //     UIManager.btnDisconnect.gameObject.SetActive(false);
         // }
         // SetGamePausedServerRpc(false);
+        if (TimeManager.Instance.GameStarted.Value) ShowPlayUIServerRpc();
     }
 
     private void SetGameStarted()
     {
         foreach (var player in LewinNetworkManager.ConnectedPlayerList)
         {
+            print(player.HasUnitSelected.Value);
             if (!player.HasUnitSelected.Value)
             {
-                PlayerConsoleManager.LogMessage($"{player.Name.Value} isn't ready yet", "Server", OwnerClientId);
+                PlayerConsoleManager.LogMessageServerRpc($"{player.Name.Value} isn't ready yet", "Server", OwnerClientId);
                 return;
             }
         }
         TimeManager.Instance.SetGameStartedServerRpc();
-        Cursor.lockState = CursorLockMode.Locked;
-        UIManager.btnDisconnect.gameObject.SetActive(false);
+        ShowPlayUIServerRpc();
     }
 
     [ServerRpc]
-    private void SetGameStartedServerRpc()
+    private void ShowPlayUIServerRpc()
     {
+        ShowPlayUIClientRpc();
+    }
+
+    [ClientRpc]
+    private void ShowPlayUIClientRpc()
+    {
+        UIManager.Instance.btnDisconnect.gameObject.SetActive(false);
+        Cursor.lockState = CursorLockMode.Locked;
+        UIManager.Instance.SetUI(UIWindows.PlayUI);
     }
 
     [ServerRpc]
@@ -285,15 +294,21 @@ public class PlayerController : NetworkBehaviour
         isPlayersTurn = value;
     }
 
+    public void SetPlayersTurn(bool value)
+    {
+        selectedUnit.GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
+    }
+
     [ClientRpc]
     public void SetCamPositionClientRpc(bool playersTurn, ClientRpcParams clientRpcParams = default)
     {
         if (playersTurn && selectedUnit)
         {
             LeanTween.rotateLocal(playerCamera.gameObject, Vector3.zero, .2f);
-            LeanTween.move(playerCamera.gameObject, selectedUnit.transform.position + offsetToUnit, .2f);/* .setOnComplete(() => {
-                playerCamera.transform.parent = selectedUnit.transform;
-            }); */
+            LeanTween.move(playerCamera.gameObject, selectedUnit.transform.position + cameraPlayerOffset, .2f).setOnComplete(() => {
+                // playerCamera.transform.parent = selectedUnit.transform;
+                isPlayersTurn = true;
+            });
         }
         else if (!selectedUnit)
         {
@@ -303,8 +318,22 @@ public class PlayerController : NetworkBehaviour
         else
         {
             // playerCamera.transform.parent = null;
+            selectedUnit.GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
+            isPlayersTurn = false;
             LeanTween.rotate(playerCamera.gameObject, birdsEyeViewCamPosition.eulerAngles, .2f);
             LeanTween.move(playerCamera.gameObject, birdsEyeViewCamPosition.position, .2f);
         }
+    }
+
+    [ServerRpc]
+    public void SetGameEndedServerRpc()
+    {
+        SetGameEndedClientRpc();
+    }
+
+    [ClientRpc]
+    private void SetGameEndedClientRpc()
+    {
+        playerInput.KeyboardMouse.MouseClick.started -= SelectUnit;
     }
 }

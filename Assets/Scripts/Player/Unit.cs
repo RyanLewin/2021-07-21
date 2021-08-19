@@ -34,7 +34,7 @@ public class Unit : NetworkBehaviour
     public NetworkVariableFloat Health = new NetworkVariableFloat(100);
     bool isDead = false;
     [SerializeField] LayerMask bulletMask;
-
+    [SerializeField] Transform gun;
     bool scope = false;
 
     public NetworkVariableVector3 Position = new NetworkVariableVector3(new NetworkVariableSettings
@@ -77,6 +77,7 @@ public class Unit : NetworkBehaviour
         EnableInput();
         this.playerCamera = playerCamera;
         playerConsoleManager = playerController.GetComponent<PlayerConsoleManager>();
+        gameObject.layer = LayerMask.NameToLayer("Ignore Raycast");
     }
 
     [ServerRpc]
@@ -124,9 +125,9 @@ public class Unit : NetworkBehaviour
                 if (team != playerController.TeamNumber)
                 {
                     var message = $"Game Over - {playerController.Name.Value} wins!";
-                    // print(message);
-                    playerConsoleManager.LogMessage(message, "Server");
-                    GameEndClientRpc(true);
+                    playerConsoleManager.LogMessageServerRpc(message, "Server");
+                    GameEndServerRpc();
+                    playerController.SetGameEndedServerRpc();
                 }
             }
         }
@@ -173,6 +174,7 @@ public class Unit : NetworkBehaviour
         }
 
         Run();
+        LookGun();
     }
 
     [ServerRpc]
@@ -242,6 +244,15 @@ public class Unit : NetworkBehaviour
         Position.Value = newPos;
     }
 
+    private void LookGun()
+    {
+        if (Physics.Raycast(transform.position + playerController.cameraPlayerOffset, playerCamera.transform.forward, out RaycastHit hitInfo, 100f, bulletMask))
+        {
+            gun.LookAt(hitInfo.point);
+            print(hitInfo.transform.name);
+        }
+    }
+
     private void ScopeSet(InputAction.CallbackContext context)
     {
         if (context.started)
@@ -254,24 +265,26 @@ public class Unit : NetworkBehaviour
     {
         if (context.started && HasControl())
         {
-            ReceiveDamageServerRpc(transform.position, playerCamera.transform.forward, swapPlayerOnShoot);
+            ReceiveDamageServerRpc(gun.position, gun.forward, swapPlayerOnShoot);
         }
     }
 
     [ServerRpc]
     public void ReceiveDamageServerRpc(Vector3 pos, Vector3 dir, bool swapPlayer)
     {
-        Debug.DrawRay(pos, dir, Color.red, 5f);
-        var hitResults = Physics.RaycastAll(pos, dir, 100f);
+        var hitResults = Physics.RaycastAll(pos, dir, 100f, bulletMask);
         if (hitResults.Length > 0)
         {
+            System.Array.Sort(hitResults, (x,y) => x.distance.CompareTo(y.distance));
             foreach (var hitResult in hitResults)
             {
+                if (hitResult.transform.gameObject.layer == LayerMask.NameToLayer("BlockingWall"))
+                    break;
                 if (hitResult.transform.TryGetComponent<Unit>(out Unit other))
                 {
                     other.TakeDamage(50);
                     if (playerController)
-                        playerController.GetComponent<PlayerConsoleManager>().LogMessage($"Dealt {other.Health.Value} damage", "Server");
+                        playerController.GetComponent<PlayerConsoleManager>().LogMessageServerRpc($"Dealt {other.Health.Value} damage", "Server");
                 }
             }
         }
@@ -292,11 +305,18 @@ public class Unit : NetworkBehaviour
         Health.Value -= amount;
     }
 
+    [ServerRpc]
+    private void GameEndServerRpc()
+    {
+        GameEndClientRpc();
+    }
+
     [ClientRpc]
-    public void GameEndClientRpc(bool value)
+    public void GameEndClientRpc()
     {
         TimeManager.SetGameEnded();
         isDead = true;
-        UIManager.Instance.ShowGameEnd(value);
+        Cursor.lockState = CursorLockMode.None;
+        UIManager.Instance.SetUI(UIWindows.GameEndUI);
     }
 }
