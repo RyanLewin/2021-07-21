@@ -19,13 +19,13 @@ public class TimeManager : NetworkBehaviour
     [SerializeField] private int playerTurn = 0;
     public NetworkVariableBool GameStarted;
     // public bool IsGameStarted { get { return GameStarted; } }
-    public bool IsGamePaused { get; private set; }
-    private NetworkVariableBool GamePaused = new NetworkVariableBool(new NetworkVariableSettings
+    // public bool IsGamePaused { get; private set; }
+    public NetworkVariableBool GamePaused = new NetworkVariableBool(new NetworkVariableSettings
     {
         WritePermission = NetworkVariablePermission.Everyone,
         ReadPermission = NetworkVariablePermission.Everyone
     });
-    private NetworkVariableBool GameEnded = new NetworkVariableBool(new NetworkVariableSettings
+    public NetworkVariableBool GameEnded = new NetworkVariableBool(new NetworkVariableSettings
     {
         WritePermission = NetworkVariablePermission.Everyone,
         ReadPermission = NetworkVariablePermission.Everyone
@@ -44,7 +44,7 @@ public class TimeManager : NetworkBehaviour
 
     private void FixedUpdate()
     {
-        IsGamePaused = GamePaused.Value;
+        // IsGamePaused = GamePaused.Value;
         if (GameStarted.Value && !GamePaused.Value && (IsHost || IsServer))
         {
             // print(gameStarted + " - " + !GamePaused.Value + " - " + timer.Value);
@@ -65,14 +65,13 @@ public class TimeManager : NetworkBehaviour
         UIManager.timerText.text = $"Timer: {time.ToString("0.00")}";
     }
 
-    [ServerRpc]
+    [ServerRpc (RequireOwnership = false)]
     public void ResetTimerServerRpc()
     {
         timer.Value = 0;
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    public void SetGameStartedServerRpc()
+    public void SetGameStarted()
     {
         GameStarted.Value = true;
         GameEnded.Value = false;
@@ -112,8 +111,18 @@ public class TimeManager : NetworkBehaviour
         playerTurn++;
         if (playerTurn >= LewinNetworkManager.ConnectedPlayerList.Count)
             playerTurn = 0;
+
+        SetGamePaused(true);
+        StartCoroutine(DelayToSetNextPlayer());
+        // print(LewinNetworkManager.ConnectedPlayerList[playerTurn].Name.Value);
+    }
+
+    IEnumerator DelayToSetNextPlayer()
+    {
+        yield return new WaitForSeconds(.5f);
+        timer.Value = 0;
         var newPlayer = LewinNetworkManager.ConnectedPlayerList[playerTurn];
-        clientRpcSendParams = new ClientRpcParams
+        var clientRpcSendParams = new ClientRpcParams
         {
             Send = new ClientRpcSendParams
             {
@@ -122,7 +131,5 @@ public class TimeManager : NetworkBehaviour
         };
         newPlayer.SetPlayersTurnClientRpc(true);
         newPlayer.SetCamPositionClientRpc(true, clientRpcSendParams);
-        SetGamePaused(true);
-        // print(LewinNetworkManager.ConnectedPlayerList[playerTurn].Name.Value);
     }
 }

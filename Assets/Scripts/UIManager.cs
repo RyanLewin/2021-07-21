@@ -8,6 +8,7 @@ using UnityEngine.Serialization;
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance;
+    [SerializeField] PlayerSaveData PlayerSaveData;
 
     public GameObject objMenuUI;
     public GameObject unitSelectionUI;
@@ -31,6 +32,7 @@ public class UIManager : MonoBehaviour
         if (UIManager.Instance)
             Destroy(UIManager.Instance.gameObject);
         Instance = this;
+        inputPlayerName.text = PlayerSaveData.saveData.playerName;
     }
 
     private void Start() {
@@ -59,7 +61,6 @@ public class UIManager : MonoBehaviour
 
     public void SetLockMode()
     {
-        print(currentOpenUI);
         switch(currentOpenUI)
         {
             case(UIWindows.PlayUI):

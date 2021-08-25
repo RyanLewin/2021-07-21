@@ -80,7 +80,7 @@ public class PlayerConsoleManager : NetworkBehaviour
     private void OnDisable()
     {
         if (IsLocalPlayer && ConsoleLogger)
-            ConsoleLogger.SetShowFullChat(false, false);
+            ConsoleLogger.SetShowFullChat(false, true);
 
         if (playerInput == null) return;
         playerInput.KeyboardMouse.SendMessage.started -= SendMessage;

@@ -24,13 +24,12 @@ public class ConsoleLogger : NetworkBehaviour
     private void Awake()
     {
         Instance = this;
-        SetShowFullChat(false);
-        Cursor.lockState = CursorLockMode.None;
+        SetShowFullChat(false, true);
     }
 
-    public void SetShowFullChat(bool value, bool lockCursor = true)
+    public void SetShowFullChat(bool value, bool freeCursor = false)
     {
-        if (value) 
+        if (value || freeCursor) 
             Cursor.lockState = CursorLockMode.None;
         else
             UIManager.Instance.SetLockMode();

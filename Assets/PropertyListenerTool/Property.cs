@@ -64,7 +64,7 @@ namespace PropertyListenerTool
             //Adds the listeners path name to a list of strings for the property drawer and adds the listener to the Action (m_variable)
             //Format of eventName is "[ObjectName][Script] - [Method]"
             string eventName = $"{action.Target.ToString()}{action.Method.Name}".Replace("(", " - ").Replace(")", ".");
-            
+
             //if the list already contains the action, then remove it to reset the call.
             RemoveListener(action);
 
@@ -78,7 +78,7 @@ namespace PropertyListenerTool
         {
             //Removes the given action from the lists and removes the listener from the Action (m_variable)
             string eventName = $"{action.Target.ToString()}{action.Method.Name}".Replace("(", " - ").Replace(")", ".");
-            for(int i = 0; i < m_listeningObjects.Count; i++)
+            for (int i = 0; i < m_listeningObjects.Count; i++)
             {
                 if (m_listeningObjects[i] == action.Target &&
                         m_listenerPaths.Contains(eventName))
@@ -107,7 +107,7 @@ namespace PropertyListenerTool
     /// This will call YourMethod when the variable YourVariableName is edited. </br>
     /// </summary>
     [Serializable] // A Property for Integer types, inherits from the Property Script.
-    public class IntProperty : Property<int>{}
+    public class IntProperty : Property<int> { }
 
     /// <summary>
     /// <br> Access the value in this property using YourVariableName.m_property. </br>
@@ -115,7 +115,7 @@ namespace PropertyListenerTool
     /// This will call YourMethod when the variable YourVariableName is edited. </br>
     /// </summary>
     [Serializable] // A Property for Float types, inherits from the Property Script.
-    public class FloatProperty : Property<float>{}
+    public class FloatProperty : Property<float> { }
 
     /// <summary>
     /// <br> Access the value in this property using YourVariableName.m_property. </br>
@@ -123,5 +123,5 @@ namespace PropertyListenerTool
     /// This will call YourMethod when the variable YourVariableName is edited. </br>
     /// </summary>
     [Serializable] // A Property for Bool types, inherits from the Property Script.
-    public class BoolProperty : Property<bool>{}
+    public class BoolProperty : Property<bool> { }
 }

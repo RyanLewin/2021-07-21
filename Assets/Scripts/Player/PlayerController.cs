@@ -10,6 +10,7 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] GameObject UICanvasPrefab;
     LewinNetworkManager LewinNetworkManager => LewinNetworkManager.Instance;
     PlayerConsoleManager PlayerConsoleManager;
+    [SerializeField] PlayerSaveData PlayerSaveData;
     public PlayerInput playerInput { get; private set; }
     public bool isPlayersTurn;
     public NetworkVariableBool CanPlayerMove = new NetworkVariableBool(new NetworkVariableSettings
@@ -56,7 +57,6 @@ public class PlayerController : NetworkBehaviour
     public override void NetworkStart()
     {
         if (!IsLocalPlayer) return;
-        gameObject.name = $"{gameObject.name}_{NetworkManager.LocalClientId}";
         playerInput = new PlayerInput();
         EnableInput();
         PlayerConsoleManager = GetComponent<PlayerConsoleManager>();
@@ -71,10 +71,12 @@ public class PlayerController : NetworkBehaviour
         UIManager.btnChoose.interactable = false;
 
         var playerName = UIManager.inputPlayerName.text;
+        gameObject.name = $"{gameObject.name}_{playerName}";
         if (NetworkManager.IsServer)
             Name.Value = playerName;
         else
             SubmitNameChangeServerRpc(playerName);
+        PlayerSaveData.SetName(playerName);
         PlayerConsoleManager.SetPlayerName(playerName);
         PlayerConsoleManager.LogMessageServerRpc($"{playerName} has joined.", "Server");
         ConnectedPlayerServerRpc(OwnerClientId);
@@ -173,6 +175,9 @@ public class PlayerController : NetworkBehaviour
 
     private void SelectUnit(InputAction.CallbackContext context)
     {
+        var timeManager = TimeManager.Instance;
+        if (timeManager.GameStarted.Value && timeManager.GameEnded.Value)
+            return;
         if (context.started && !selectedUnit)
         {
             Vector3 mouseScreenPos = playerInput.KeyboardMouse.PointerPosition.ReadValue<Vector2>();
@@ -187,13 +192,13 @@ public class PlayerController : NetworkBehaviour
                             return;
                         // pointerPos = hit.point;
                         UIManager.btnChoose.interactable = true;
+                        UIManager.SetUI(UIWindows.UnitSelection);
+                        Cursor.lockState = CursorLockMode.None;
                         LeanTween.rotateLocal(playerCamera.gameObject, selectedUnit.transform.eulerAngles, .2f);
                         LeanTween.move(playerCamera.gameObject, selectedUnit.transform.position + cameraPlayerOffset, .2f).setOnComplete(() =>
                         {
                             playerCamera.transform.parent = selectedUnit.transform;
                         });
-                        Cursor.lockState = CursorLockMode.None;
-                        UIManager.SetUI(UIWindows.UnitSelection);
                     }
                 }
             }
@@ -208,33 +213,32 @@ public class PlayerController : NetworkBehaviour
         selectedUnit.SetToControl();
         HasUnitSelected.Value = true;
 
-        // if (IsHost)
-        // {
-            UIManager.btnDisconnect.onClick.RemoveAllListeners();
-            UIManager.btnDisconnect.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Play";
-            UIManager.btnDisconnect.onClick.AddListener(SetGameStarted);
-        // }
-        // else
-        // {
-        //     UIManager.btnDisconnect.gameObject.SetActive(false);
-        // }
-        // SetGamePausedServerRpc(false);
+        UIManager.btnDisconnect.onClick.RemoveAllListeners();
+        UIManager.btnDisconnect.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "Play";
+        UIManager.btnDisconnect.onClick.AddListener(SetGameStarted);
+        
         if (TimeManager.Instance.GameStarted.Value) ShowPlayUIServerRpc();
     }
 
     private void SetGameStarted()
     {
+        SetGameStartedServerRpc();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetGameStartedServerRpc()
+    {
         foreach (var player in LewinNetworkManager.ConnectedPlayerList)
         {
-            print(player.HasUnitSelected.Value);
             if (!player.HasUnitSelected.Value)
             {
-                PlayerConsoleManager.LogMessageServerRpc($"{player.Name.Value} isn't ready yet", "Server", OwnerClientId);
+                PlayerConsoleManager.Instance.LogMessageServerRpc($"{player.Name.Value} isn't ready yet", "Server", OwnerClientId);
                 return;
             }
         }
-        TimeManager.Instance.SetGameStartedServerRpc();
-        ShowPlayUIServerRpc();
+        TimeManager.Instance.SetGamePaused(true);
+        TimeManager.Instance.SetGameStarted();
+        ShowPlayUIClientRpc();
     }
 
     [ServerRpc]
@@ -323,17 +327,5 @@ public class PlayerController : NetworkBehaviour
             LeanTween.rotate(playerCamera.gameObject, birdsEyeViewCamPosition.eulerAngles, .2f);
             LeanTween.move(playerCamera.gameObject, birdsEyeViewCamPosition.position, .2f);
         }
-    }
-
-    [ServerRpc]
-    public void SetGameEndedServerRpc()
-    {
-        SetGameEndedClientRpc();
-    }
-
-    [ClientRpc]
-    private void SetGameEndedClientRpc()
-    {
-        playerInput.KeyboardMouse.MouseClick.started -= SelectUnit;
     }
 }

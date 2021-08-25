@@ -40,6 +40,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1286122788042822786}
   - component: {fileID: -4000136799079222628}
+  - component: {fileID: 5314191901575041230}
   - component: {fileID: 1286122788042822785}
   - component: {fileID: 1286122788042822784}
   - component: {fileID: 1286122788042822788}
@@ -82,6 +83,20 @@ CapsuleCollider:
   m_Height: 1
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!136 &5314191901575041230
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1286122788042822790}
+  m_Material: {fileID: 13400000, guid: 8076c0c20695afe44b7dd203f4118c0b, type: 2}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  m_Radius: 0.3
+  m_Height: 0.8
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &1286122788042822785
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -96,7 +111,7 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 80
+  m_Constraints: 112
   m_CollisionDetection: 0
 --- !u!114 &1286122788042822784
 MonoBehaviour:
@@ -110,6 +125,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fde26671e8751444bbe8b393be98f098, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  PlayerSaveData: {fileID: 11400000, guid: 1328327e8e40b414da6f8d9595d71a6e, type: 2}
+  unitColours:
+  - {fileID: 2100000, guid: 1a1a4a5bf1badc84abb705be3a796706, type: 2}
+  - {fileID: 2100000, guid: 44343211dfb9b004d8c9fd4ac7f9de6a, type: 2}
+  model: {fileID: 1286122788948534501}
   groundCheckPos: {fileID: 1286122789858433041}
   groundMask:
     serializedVersion: 2

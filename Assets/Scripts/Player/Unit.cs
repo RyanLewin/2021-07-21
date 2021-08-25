@@ -11,7 +11,10 @@ public class Unit : NetworkBehaviour
     PlayerController playerController;
     PlayerConsoleManager playerConsoleManager;
     TimeManager TimeManager;
+    [SerializeField] PlayerSaveData PlayerSaveData;
     PlayerInput playerInput;
+    [SerializeField] Material[] unitColours;
+    [SerializeField] Transform model;
     Rigidbody rigidBody;
     public bool CanControl { get; set; }
     public bool isGrounded { get; private set; }
@@ -37,20 +40,23 @@ public class Unit : NetworkBehaviour
     [SerializeField] Transform gun;
     bool scope = false;
 
+    [Space(10f)]
+    bool gameWon = false;
+
     public NetworkVariableVector3 Position = new NetworkVariableVector3(new NetworkVariableSettings
     {
         WritePermission = NetworkVariablePermission.ServerOnly,
         ReadPermission = NetworkVariablePermission.Everyone
     });
 
-    // private void OnGUI()
-    // {
-    //     if (!IsOwner) return;
-    //     GUILayout.Space(50);
-    //     if (playerController)
-    //         GUILayout.Label(playerController.isPlayersTurn.ToString());
-    //     GUILayout.Label(rigidBody.angularVelocity.ToString());
-    // }
+    private void OnGUI()
+    {
+        if (!IsOwner) return;
+        GUILayout.Space(50);
+        if (playerController)
+            GUILayout.Label(playerController.isPlayersTurn.ToString());
+        GUILayout.Label(rigidBody.angularVelocity.ToString());
+    }
 
     private void Awake()
     {
@@ -78,6 +84,10 @@ public class Unit : NetworkBehaviour
         this.playerCamera = playerCamera;
         playerConsoleManager = playerController.GetComponent<PlayerConsoleManager>();
         gameObject.layer = LayerMask.NameToLayer("Ignore Raycast");
+
+        var unitMaterial = unitColours[playerController.TeamNumber];
+        model.GetComponent<MeshRenderer>().material = unitMaterial;
+        gun.GetComponent<MeshRenderer>().material = unitMaterial;
     }
 
     [ServerRpc]
@@ -114,20 +124,22 @@ public class Unit : NetworkBehaviour
         if (playerCamera) playerCamera.transform.parent = null;
     }
 
+    bool endTriggered = false;
     private void OnTriggerEnter(Collider other)
     {
         if (!IsOwner) return;
-        if (other.CompareTag("KillSwitch"))
+        if (other.CompareTag("KillSwitch") && !endTriggered)
         {
             if (other.TryGetComponent<KillSwitch>(out var killSwitch))
             {
                 var team = killSwitch.GetTeamNumber;
                 if (team != playerController.TeamNumber)
                 {
+                    endTriggered = true;
                     var message = $"Game Over - {playerController.Name.Value} wins!";
                     playerConsoleManager.LogMessageServerRpc(message, "Server");
+                    gameWon = true;
                     GameEndServerRpc();
-                    playerController.SetGameEndedServerRpc();
                 }
             }
         }
@@ -163,9 +175,9 @@ public class Unit : NetworkBehaviour
             return;
         }
 
-        if (!HasControl() || TimeManager.IsGamePaused)
+        if (!HasControl() || TimeManager.GamePaused.Value)
         {
-            if (TimeManager.IsGamePaused && HasControl())
+            if (TimeManager.GamePaused.Value && HasControl())
             {
                 if (playerInput.KeyboardMouse.Move.ReadValue<Vector2>().magnitude != 0)
                     playerController.SetGamePausedServerRpc(false);
@@ -249,7 +261,12 @@ public class Unit : NetworkBehaviour
         if (Physics.Raycast(transform.position + playerController.cameraPlayerOffset, playerCamera.transform.forward, out RaycastHit hitInfo, 100f, bulletMask))
         {
             gun.LookAt(hitInfo.point);
-            print(hitInfo.transform.name);
+            var gunRotation = gun.localEulerAngles;
+            if(gunRotation.y > 180)
+                gunRotation.y -= 360;
+            gunRotation.y = Mathf.Clamp(gunRotation.y, -45f, 45f);
+            gun.localEulerAngles = gunRotation;
+            // print(hitInfo.transform.name);
         }
     }
 
@@ -263,9 +280,9 @@ public class Unit : NetworkBehaviour
 
     private void Fire(InputAction.CallbackContext context)
     {
-        if (context.started && HasControl())
+        if (context.started && HasControl() && !TimeManager.Instance.GamePaused.Value)
         {
-            ReceiveDamageServerRpc(gun.position, gun.forward, swapPlayerOnShoot);
+            ReceiveDamageServerRpc(transform.position + playerController.cameraPlayerOffset, playerCamera.transform.forward, swapPlayerOnShoot);
         }
     }
 
@@ -289,12 +306,7 @@ public class Unit : NetworkBehaviour
             }
         }
 
-        if (swapPlayer)
-        {
-            TimeManager.Instance.SetNextPlayer();
-            TimeManager.Instance.ResetTimerServerRpc();
-        }
-        else if (TimeManager.Instance.IsGamePaused)
+        if (TimeManager.Instance.GamePaused.Value)
         {
             TimeManager.Instance.SetGamePaused(false);
         }
@@ -318,5 +330,7 @@ public class Unit : NetworkBehaviour
         isDead = true;
         Cursor.lockState = CursorLockMode.None;
         UIManager.Instance.SetUI(UIWindows.GameEndUI);
+
+        PlayerSaveData.PointsChanged(gameWon ? 10 : -10);
     }
 }
